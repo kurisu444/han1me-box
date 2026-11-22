@@ -4,7 +4,7 @@ import * as api from '../../../src/data/remote/han1me_api';
 import * as watch from '../../../src/data/local/watch_repository';
 import * as accounts from '../../../src/data/local/account_store';
 import { readHomeCache, writeHomeCache } from '../../../src/data/local/home_cache';
-import { loadSettings, saveSettings } from '../../../src/app/settings_context';
+import { loadSettings, saveSettings } from '../../../src/data/local/settings_store';
 import { get } from '../../../src/data/remote/han1me_http_client';
 
 function equal(actual: unknown, expected: unknown) {

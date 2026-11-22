@@ -2,15 +2,18 @@
   "name": "han1me-box",
   "version": "0.1.0",
   "description": "",
-  "main": "electron/main.js",
+  "main": "dist-electron/main.js",
   "scripts": {
-    "dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
-    "build": "vite build",
-    "dist:linux": "vite build && electron-builder --linux --publish never",
-    "dist:win": "vite build && electron-builder --win --publish never",
-    "test:unit": "node --experimental-strip-types --test tests/unit/*.test.mjs tests/unit/*.test.cjs && node tests/run-logic.cjs",
-    "test:integration": "electron tests/integration/data.cjs && electron tests/integration/downloads.cjs && electron tests/integration/app.cjs",
-    "test:login": "electron tests/integration/login.cjs",
+    "dev": "npm run build:electron && concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
+    "build:electron": "vite build --config vite.electron.config.ts",
+    "build": "npm run build:electron && vite build",
+    "lint": "biome lint src electron",
+    "lint:fix": "biome lint --write src electron && prettier --write src electron",
+    "dist:linux": "npm run build && electron-builder --linux --publish never",
+    "dist:win": "npm run build && electron-builder --win --publish never",
+    "test:unit": "npm run build:electron && node --experimental-strip-types --test tests/unit/*.test.mjs tests/unit/*.test.cjs && node tests/run-logic.cjs",
+    "test:integration": "npm run build:electron && electron tests/integration/data.cjs && electron tests/integration/downloads.cjs && electron tests/integration/app.cjs && electron tests/integration/login.cjs",
+    "test:login": "npm run build:electron && electron tests/integration/login.cjs",
     "test": "npm run test:unit && npm run test:integration"
   },
   "build": {
@@ -21,16 +24,21 @@
     },
     "files": [
       "dist/**/*",
-      "electron/**/*",
+      "dist-electron/**/*",
       "assets/logo.png"
     ],
     "linux": {
-      "target": ["AppImage"],
+      "target": [
+        "AppImage"
+      ],
       "icon": "assets/logo.png",
       "category": "Video"
     },
     "win": {
-      "target": ["nsis", "zip"],
+      "target": [
+        "nsis",
+        "zip"
+      ],
       "icon": "assets/logo.png"
     },
     "nsis": {
@@ -42,21 +50,24 @@
   "author": "",
   "license": "AGPL-3.0-only",
   "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/modifiers": "^9.0.0",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@mui/icons-material": "^9.5.0",
     "@mui/material": "^9.5.0",
     "@tanstack/react-query": "^5.108.2",
-    "chrome-launcher": "^1.2.3",
     "fflate": "^0.8.3",
     "hls.js": "^1.7.4",
-    "puppeteer-core": "^25.18.1",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "react-router-dom": "^7.18.6",
     "react-zoom-pan-pinch": "^4.4.0"
   },
   "devDependencies": {
+    "@biomejs/biome": "2.6.8",
     "@types/node": "^26.6.6",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",

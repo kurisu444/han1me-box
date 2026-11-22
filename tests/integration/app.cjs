@@ -1,4 +1,4 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, ipcMain } = require('electron');
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const os = require('node:os');
@@ -176,6 +176,7 @@ const repo = path.resolve(__dirname, '../..');
       JSON.stringify({
         baseUrl: base,
         language: 'english',
+        themeMode: 'light',
         autoPlayOnOpen: false,
         webDavEnabled: false,
       }),
@@ -189,24 +190,52 @@ const repo = path.resolve(__dirname, '../..');
         },
       }),
     );
-    const ipc = require(repo + '/electron/ipc');
-    ipc.configureSession();
+    const ipc = require(repo + '/dist-electron/ipc');
+    const electronHttp = require(repo + '/dist-electron/http');
+    electronHttp.configureUserAgent();
     await ipc.registerIpc();
+    const store = require(repo + '/dist-electron/store');
+    let releaseSettings, settingsRequested;
+    const settingsGate = new Promise((resolve) => {
+      releaseSettings = resolve;
+    });
+    const settingsRead = new Promise((resolve) => {
+      settingsRequested = resolve;
+    });
+    ipcMain.removeHandler('store:read');
+    ipcMain.handle('store:read', async (_event, file) => {
+      if (file === 'setting.json') {
+        settingsRequested();
+        await settingsGate;
+      }
+      return store.readStore(file);
+    });
     win = new BrowserWindow({
       show: false,
       width: 1280,
       height: 900,
-      webPreferences: { preload: repo + '/electron/preload.js' },
+      webPreferences: { preload: repo + '/dist-electron/preload.js' },
     });
-    require(repo + '/electron/http').installRequestHeaders(
-      win.webContents.session,
-      win.webContents,
-    );
+    electronHttp.installRequestHeaders(win.webContents.session, win.webContents, ipc.getSettings);
     const errors = [];
     win.webContents.on('console-message', (details) => {
       if (details.level === 'error') errors.push(details.message);
     });
     await win.loadURL(base + '/app');
+    await settingsRead;
+    assert.equal(
+      await win.webContents.executeJavaScript('document.querySelector("main") !== null'),
+      false,
+      'Business UI must wait for persisted settings before mounting',
+    );
+    assert.equal(
+      await win.webContents.executeJavaScript(
+        'document.querySelector("[data-title-bar]").getBoundingClientRect().height',
+      ),
+      36,
+    );
+    assert.equal(homeCookies.length, 0);
+    releaseSettings();
     const evaluate = (s) =>
       win.webContents.executeJavaScript(s).catch((error) => {
         console.error('Renderer script failed:', s, errors);
@@ -226,9 +255,29 @@ const repo = path.resolve(__dirname, '../..');
       throw Error('Timed out ' + s);
     };
     await waitFor('document.body.innerText.includes("Sample title")');
+    assert.equal(await evaluate('getComputedStyle(document.body).colorScheme'), 'light');
     assert(homeCookies.length > 0);
     assert(homeCookies.every((c) => c.includes('auth=fixture')));
     console.log('PASS native renderer restores settings and account cookies before home requests');
+    await evaluate(
+      `void window.electron.session.profile(${JSON.stringify(base + '/user/7/edit')})`,
+    );
+    await waitFor('document.body.innerText.includes("Back to app")');
+    assert.equal(BrowserWindow.getAllWindows().length, 1);
+    const embedded = win.contentView.children.find((view) => view.webContents !== win.webContents);
+    assert.ok(embedded, 'Website is embedded in the existing window');
+    const embeddedContents = embedded.webContents;
+    assert.equal(embedded.getBounds().y, 92);
+    assert.equal(
+      await evaluate('document.elementFromPoint(20, 18).closest("[data-title-bar]") !== null'),
+      true,
+    );
+    await evaluate(`Array.from(document.querySelectorAll('button'))
+      .find(button => button.textContent === 'Back to app').click()`);
+    await waitFor('!document.body.innerText.includes("Back to app")');
+    assert.equal(embeddedContents.isDestroyed(), true);
+    assert.equal(await evaluate('document.body.innerText.includes("Sample title")'), true);
+    console.log('PASS embedded website toolbar closes the view and restores the app');
     await evaluate('location.hash="/library"');
     await waitFor(
       "Array.from(document.querySelectorAll('[role=\"tab\"]')).some(e=>e.textContent==='Favorite')",
@@ -344,8 +393,8 @@ const repo = path.resolve(__dirname, '../..');
       const rect = window.windowModeVideo.parentElement.getBoundingClientRect();
       return [rect.x, rect.y, rect.width, rect.height, innerWidth, innerHeight];
     })()`);
-    assert.deepEqual(windowModeBounds.slice(0, 2), [0, 0]);
-    assert.deepEqual(windowModeBounds.slice(2, 4), windowModeBounds.slice(4));
+    assert.deepEqual(windowModeBounds.slice(0, 2), [0, 36]);
+    assert.deepEqual(windowModeBounds.slice(2, 4), [windowModeBounds[4], windowModeBounds[5] - 36]);
     assert.equal(await evaluate('document.fullscreenElement === null'), true);
     assert.equal(await evaluate('window.windowModeVideo.paused'), false);
     assert.equal(await evaluate('document.documentElement.style.overflow'), 'hidden');

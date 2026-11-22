@@ -97,8 +97,12 @@ export function isCloudflareResponse(response: Han1meHttpResponse): boolean {
 }
 
 export function checkResponse(response: Han1meHttpResponse, url: string): void {
-  if (isCloudflareResponse(response)) throw new CloudflareChallengeException(url);
-  if (response.statusCode >= 400) throw new Error(`Request failed: HTTP ${response.statusCode}`);
+  if (isCloudflareResponse(response)) {
+    throw new CloudflareChallengeException(url);
+  }
+  if (response.statusCode >= 400) {
+    throw new Error(`Request failed: HTTP ${response.statusCode}`);
+  }
 }
 
 function parseDocument(body: string): Document {
@@ -108,7 +112,9 @@ function parseDocument(body: string): Document {
 export async function documentWithBody(url: string, referer?: string) {
   const response = await http.get(url, referer ? { Referer: referer } : undefined);
   checkResponse(response, url);
-  if (new URL(url).origin !== new URL(response.url).origin) rememberOrigin(url, response.url);
+  if (new URL(url).origin !== new URL(response.url).origin) {
+    rememberOrigin(url, response.url);
+  }
   return { document: parseDocument(response.body), body: response.body, url: response.url };
 }
 
@@ -205,7 +211,9 @@ function simplifiedCard(element: Element, baseUrl: string): VideoCard {
 function uniqueCards(cards: VideoCard[]): VideoCard[] {
   const seen = new Set<string>();
   return cards.filter((video) => {
-    if (!video.id || seen.has(video.id)) return false;
+    if (!video.id || seen.has(video.id)) {
+      return false;
+    }
     seen.add(video.id);
     return true;
   });
@@ -217,11 +225,15 @@ export function parseHome(document: Document, baseUrl: string): HomeFeed {
     const row = anchor.nextElementSibling?.querySelector(
       '.home-rows-videos-wrapper.horizontal-row',
     );
-    if (!row) continue;
+    if (!row) {
+      continue;
+    }
     const videos = Array.from(row.querySelectorAll('div.horizontal-card'), (element) =>
       card(element, baseUrl),
     ).filter((video) => video.id);
-    if (!videos.length) continue;
+    if (!videos.length) {
+      continue;
+    }
     sections.push({
       title: directText(anchor.querySelector('h3')),
       moreUrl: anchor.getAttribute('href') ?? '',
@@ -261,12 +273,16 @@ function extractSources(document: Document, baseUrl: string, body: string): Vide
     url: absolute(baseUrl, source.getAttribute('src')),
     type: source.getAttribute('type') ?? undefined,
   })).filter((source) => source.url);
-  if (sources.length) return sources;
+  if (sources.length) {
+    return sources;
+  }
   const preload = absolute(
     baseUrl,
     document.querySelector('link[rel="preload"][as="video"]')?.getAttribute('href'),
   );
-  if (preload) return [{ quality: 'Default', url: preload }];
+  if (preload) {
+    return [{ quality: 'Default', url: preload }];
+  }
   const patterns = [
     /const\s+source\s*=\s*['"]([^'"]+)['"]/g,
     /["']?(?:file|src)["']?\s*:\s*['"]([^'"]+)['"]/g,
@@ -275,7 +291,9 @@ function extractSources(document: Document, baseUrl: string, body: string): Vide
   ];
   const urls = new Set<string>();
   for (const pattern of patterns) {
-    for (const match of body.matchAll(pattern)) urls.add(absolute(baseUrl, match[1] ?? match[0]));
+    for (const match of body.matchAll(pattern)) {
+      urls.add(absolute(baseUrl, match[1] ?? match[0]));
+    }
   }
   const hls = /\.m3u8(?:\?|$)/i;
   return [
@@ -289,7 +307,9 @@ function extractSources(document: Document, baseUrl: string, body: string): Vide
 function durationSeconds(document: Document, body: string): number | undefined {
   const meta =
     document.querySelector('meta[property="og:video:duration"]')?.getAttribute('content') ?? '';
-  if (/^\d+$/.test(meta) && Number(meta) > 0) return Number(meta);
+  if (/^\d+$/.test(meta) && Number(meta) > 0) {
+    return Number(meta);
+  }
   const iso =
     document.querySelector('meta[itemprop="duration"]')?.getAttribute('content') ??
     /["']duration["']\s*:\s*["']([^"']+)["']/.exec(body)?.[1];
@@ -300,7 +320,9 @@ function durationSeconds(document: Document, body: string): number | undefined {
       Number(match[2] ?? 0) * 3600 +
       Number(match[3] ?? 0) * 60 +
       Number(match[4] ?? 0);
-    if (total > 0) return total;
+    if (total > 0) {
+      return total;
+    }
   }
   for (const selector of [
     '#video-duration',
@@ -309,12 +331,16 @@ function durationSeconds(document: Document, body: string): number | undefined {
     '.video-description-panel .duration',
   ]) {
     const seconds = parseVideoDuration(text(document.querySelector(selector)));
-    if (seconds !== null) return seconds;
+    if (seconds !== null) {
+      return seconds;
+    }
   }
 }
 
 function formatDuration(seconds?: number): string | undefined {
-  if (seconds === undefined || seconds <= 0) return undefined;
+  if (seconds === undefined || seconds <= 0) {
+    return undefined;
+  }
   const hours = Math.floor(seconds / 3600);
   const minutes = String(Math.floor(seconds / 60) % 60).padStart(2, '0');
   const remainder = String(seconds % 60).padStart(2, '0');
@@ -353,7 +379,9 @@ export function parseVideo(
   const tags: VideoTag[] = [];
   for (const tag of document.querySelectorAll('.video-tags-wrapper .single-video-tag a')) {
     const href = tag.getAttribute('href')?.trim() ?? '';
-    if (!href) continue;
+    if (!href) {
+      continue;
+    }
     let visible = true;
     for (
       let element: Element | null = tag;
@@ -365,18 +393,22 @@ export function parseVideo(
         element.hasAttribute('hidden') ||
         element.classList.contains('hidden') ||
         element.getAttribute('style')?.replaceAll(' ', '').includes('display:none')
-      )
+      ) {
         visible = false;
+      }
     }
-    if (!visible) continue;
+    if (!visible) {
+      continue;
+    }
     const label = text(tag) ?? '';
     const count = /\((\d+)\)/.exec(label)?.[1];
     const name =
       queryValue(href, 'tags[]') ??
       queryValue(href, 'tag') ??
       label.replace(/\s*\(\d+\)\s*$/, '').trim();
-    if (name && !tags.some((existing) => existing.name === name))
+    if (name && !tags.some((existing) => existing.name === name)) {
       tags.push({ name, count: count === undefined ? undefined : Number(count), href });
+    }
   }
   const artistNameNode = document.querySelector('#video-artist-name');
   const artistImage =
@@ -468,8 +500,9 @@ export async function related(baseUrl: string, id: string): Promise<VideoCard[]>
 
 function javaStringHash(value: string): number {
   let hash = 0;
-  for (let index = 0; index < value.length; index++)
+  for (let index = 0; index < value.length; index++) {
     hash = (31 * hash + value.charCodeAt(index)) | 0;
+  }
   return hash;
 }
 
@@ -511,9 +544,13 @@ export function parseComments(document: Document, baseUrl: string): CommentPage 
   for (let index = 0; index < children.length; index += 4) {
     const wrapper = document.createElement('div');
     wrapper.append(...children.slice(index, index + 4).map((element) => element.cloneNode(true)));
-    if (wrapper.querySelectorAll('.comment-index-text').length < 2) continue;
+    if (wrapper.querySelectorAll('.comment-index-text').length < 2) {
+      continue;
+    }
     const fields = commentFields(wrapper, wrapper, baseUrl);
-    if (!fields.username || !fields.content) continue;
+    if (!fields.username || !fields.content) {
+      continue;
+    }
     const replyText = Array.from(
       wrapper.querySelectorAll('div.load-replies-btn'),
       (element) => element.textContent,
@@ -544,7 +581,9 @@ export async function comments(baseUrl: string, id: string, type = 'video'): Pro
   let body = response.body;
   try {
     const decoded = JSON.parse(body);
-    if (typeof decoded?.comments === 'string') body = decoded.comments;
+    if (typeof decoded?.comments === 'string') {
+      body = decoded.comments;
+    }
   } catch {}
   return parseComments(parseDocument(body), response.url);
 }
@@ -559,7 +598,9 @@ export async function replies(baseUrl: string, id: string): Promise<CommentPage>
   for (let index = 0; index + 1 < children.length; index += 2) {
     const body = children[index];
     const post = children[index + 1];
-    if (body.querySelectorAll('.comment-index-text').length < 2) continue;
+    if (body.querySelectorAll('.comment-index-text').length < 2) {
+      continue;
+    }
     comments.push({
       ...commentFields(body, post, response.url),
       id: '',

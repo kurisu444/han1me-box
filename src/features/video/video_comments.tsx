@@ -9,7 +9,7 @@ import ThumbUpOutlinedIcon from '@mui/icons-material/ThumbUpOutlined';
 import { useSettings } from '../../app/settings_context';
 import { resolvedBaseUrl } from '../../core/settings';
 import * as repository from '../../data/han1me_repository';
-import { type Comment, type VideoDetail } from '../../domain/models/video';
+import type { Comment, VideoDetail } from '../../domain/models/video';
 import { RequestError, LoadingState } from '../shared/request_error';
 import { useQuery } from '@tanstack/react-query';
 import { visibleComments, type CommentSort } from './video_helpers';
@@ -86,8 +86,12 @@ function Replies({ id }: { id: string }) {
 
   const replies = data?.comments ?? [];
 
-  if (isPending) return <LoadingState label={tr('正在加载回复…')} />;
-  if (error) return <RequestError error={error} onRetry={refetch} />;
+  if (isPending) {
+    return <LoadingState label={tr('正在加载回复…')} />;
+  }
+  if (error) {
+    return <RequestError error={error} onRetry={refetch} />;
+  }
 
   return (
     <Stack
@@ -169,9 +173,15 @@ export function CommentsList({
   const sort = selectedSort ?? localSort;
   const comments = visibleComments(data?.comments ?? [], settings, sort);
 
-  if (!settings.commentsEnabled) return <Alert severity="info">{tr('评论已关闭。')}</Alert>;
-  if (isPending) return <LoadingState label={tr('正在加载评论…')} />;
-  if (error) return <RequestError error={error} onRetry={refetch} />;
+  if (!settings.commentsEnabled) {
+    return <Alert severity="info">{tr('评论已关闭。')}</Alert>;
+  }
+  if (isPending) {
+    return <LoadingState label={tr('正在加载评论…')} />;
+  }
+  if (error) {
+    return <RequestError error={error} onRetry={refetch} />;
+  }
 
   return (
     <CommentActionsContext
@@ -243,7 +253,9 @@ export function VideoComments({ video }: { video: VideoDetail }) {
         ...video.playlist,
       ];
 
-  if (!settings.commentsEnabled) return <Alert severity="info">{tr('评论已关闭。')}</Alert>;
+  if (!settings.commentsEnabled) {
+    return <Alert severity="info">{tr('评论已关闭。')}</Alert>;
+  }
 
   return (
     <Box component="section">

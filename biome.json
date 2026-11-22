@@ -1,0 +1,25 @@
+{
+	"formatter": {
+		"enabled": false
+	},
+	"linter": {
+		"enabled": true,
+		"rules": {
+			"preset": "recommended",
+			"style": {
+				"useBlockStatements": "error",
+				"useSingleVarDeclarator": "error"
+			},
+			"correctness": {
+				"useExhaustiveDependencies": "warn"
+			},
+			"suspicious": {
+				"noEmptyBlockStatements": "off",
+				"noArrayIndexKey": "warn"
+			},
+			"a11y": {
+				"useMediaCaption": "off"
+			}
+		}
+	}
+}

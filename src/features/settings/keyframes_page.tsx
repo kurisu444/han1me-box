@@ -1,6 +1,5 @@
-import { useI18n } from '../../app/i18n';
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import {
   Alert,
   Button,
@@ -16,10 +15,12 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import * as repository from '../../data/local/keyframe_repository';
 import { useQuery } from '@tanstack/react-query';
-import { useConfirmation } from '../shared/use_confirmation';
+import { Link } from 'react-router-dom';
+import { useI18n } from '../../app/i18n';
+import * as repository from '../../data/local/keyframe_repository';
 import { LoadingState, RequestError } from '../shared/request_error';
+import { useConfirmation } from '../shared/use_confirmation';
 
 export function KeyframesPage() {
   const tr = useI18n();
@@ -43,8 +44,12 @@ export function KeyframesPage() {
 
   async function save() {
     const { video, position } = editing!;
-    if (!value.trim()) return;
-    if (position !== undefined && (!Number.isFinite(Number(value)) || Number(value) < 0)) return;
+    if (!value.trim()) {
+      return;
+    }
+    if (position !== undefined && (!Number.isFinite(Number(value)) || Number(value) < 0)) {
+      return;
+    }
     const changed =
       position === undefined
         ? await repository.setTitle(video.id, value.trim())
@@ -59,15 +64,24 @@ export function KeyframesPage() {
 
   async function remove(id: string, position?: number) {
     if (position === undefined) {
-      if (!(await confirmation.confirm(tr('删除此视频的全部关键帧？')))) return;
+      if (!(await confirmation.confirm(tr('删除此视频的全部关键帧？')))) {
+        return;
+      }
       await repository.deleteVideo(id);
-    } else await repository.remove(id, position);
+    } else {
+      await repository.remove(id, position);
+    }
     resource.refetch();
   }
 
   return (
     <Stack spacing={2}>
-      <Typography variant="h4">{tr('关键帧')}</Typography>
+      <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+        <Button component={Link} to="/settings" startIcon={<ArrowBackIcon />} size="small">
+          {tr('返回')}
+        </Button>
+        <Typography variant="h4">{tr('关键帧')}</Typography>
+      </Stack>
       {resource.isPending && <LoadingState label={tr('正在加载…')} />}
       {resource.error && <RequestError error={resource.error} onRetry={resource.refetch} />}
       {resource.data?.length === 0 && <Typography>{tr('暂无关键帧')}</Typography>}

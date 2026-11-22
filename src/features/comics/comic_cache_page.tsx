@@ -4,7 +4,7 @@ import { LoadingState } from '../shared/request_error';
 import { useState } from 'react';
 import { Alert, Box, Button, MenuItem, Stack, TextField, Typography } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
-import { type ComicCacheEntry, type ComicDetail } from '../../domain/models/comic';
+import type { ComicCacheEntry, ComicDetail } from '../../domain/models/comic';
 import { ComicReader } from './comic_pages';
 import { localMediaUrl } from '../../domain/models/download';
 
@@ -13,10 +13,10 @@ const categories = () => window.electron.comics.categories();
 export function ComicCachePage() {
   const tr = useI18n();
   const [error, setError] = useState('');
-  const resource = useQuery({ queryKey: ['comic-cache'], queryFn: entries }),
-    groups = useQuery({ queryKey: ['comic-categories'], queryFn: categories });
-  const [category, setCategory] = useState(''),
-    [name, setName] = useState('');
+  const resource = useQuery({ queryKey: ['comic-cache'], queryFn: entries });
+  const groups = useQuery({ queryKey: ['comic-categories'], queryFn: categories });
+  const [category, setCategory] = useState('');
+  const [name, setName] = useState('');
   const [reading, setReading] = useState<ComicDetail>();
 
   const allCategories = [
@@ -62,7 +62,9 @@ export function ComicCachePage() {
     resource.refetch();
   }
 
-  if (reading) return <ComicReader comic={reading} onClose={() => setReading(undefined)} />;
+  if (reading) {
+    return <ComicReader comic={reading} onClose={() => setReading(undefined)} />;
+  }
 
   return (
     <Stack spacing={2}>

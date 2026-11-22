@@ -14,8 +14,9 @@ export function homeVideoVisible(
   settings: AppSettings,
   subscribed = new Set<string>(),
 ): boolean {
-  if (settings.exemptSubscribedAuthors && subscribed.has(video.artist?.toLowerCase() ?? ''))
+  if (settings.exemptSubscribedAuthors && subscribed.has(video.artist?.toLowerCase() ?? '')) {
     return true;
+  }
   return (
     relatedVideoVisible(video, settings) &&
     (parseVideoDuration(video.duration) ?? 0) >= settings.minimumVideoDurationSeconds &&
@@ -52,7 +53,9 @@ export function resumePosition(progress?: WatchProgress): number {
 export function downloadSource(sources: VideoSource[], preferred: number): VideoSource | undefined {
   const quality = (source: VideoSource) => Number(/\d+/.exec(source.quality)?.[0] ?? 0);
   return sources.reduce<VideoSource | undefined>((best, item) => {
-    if (!best) return item;
+    if (!best) {
+      return item;
+    }
     const difference = Math.abs(quality(item) - preferred) - Math.abs(quality(best) - preferred);
     return difference < 0 || (difference === 0 && quality(item) < quality(best)) ? item : best;
   }, undefined);
@@ -97,6 +100,8 @@ export function visibleComments(
           (right.likesSum ?? 0) -
           ((left.likesCount ?? 0) - (left.likesSum ?? 0))
         );
+      default:
+        return 0;
     }
   });
 }

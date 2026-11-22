@@ -12,7 +12,7 @@ import {
   TextField,
 } from '@mui/material';
 import { useAccount } from '../account/account_controller';
-import { useSaveSettings, useSettings } from '../../app/settings_context';
+import { useSettings } from '../../app/settings_context';
 import { resolvedBaseUrl } from '../../core/settings';
 import { searchLocale } from '../../data/search_option_catalog';
 import reasons from '../../../assets/search_options/report_reason.json';
@@ -35,7 +35,6 @@ export function CommentActions({
   const tr = useI18n();
   const { account } = useAccount();
   const settings = useSettings();
-  const saveSettings = useSaveSettings();
   const context = useContext(CommentActionsContext);
   const [mode, setMode] = useState('');
   const [content, setContent] = useState('');
@@ -76,14 +75,9 @@ export function CommentActions({
     );
   }
 
-  function filterUser() {
-    const name = comment!.username;
-    if (settings.blockedCommentUsers.some((user) => user.toLowerCase() === name.toLowerCase()))
-      return;
-    void saveSettings({ blockedCommentUsers: [...settings.blockedCommentUsers, name] });
+  if (!comment && !account) {
+    return null;
   }
-
-  if (!comment && !account) return null;
 
   return (
     <Stack spacing={1}>

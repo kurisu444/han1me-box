@@ -16,7 +16,9 @@ export function updateJsonStore<T>(
   const next = (writes.get(fileName) ?? Promise.resolve()).then(async () => {
     const current = await readJsonStore<T>(fileName);
     const updated = update(current);
-    if (updated !== current) await writeJsonStore(fileName, updated);
+    if (updated !== current) {
+      await writeJsonStore(fileName, updated);
+    }
   });
   writes.set(
     fileName,

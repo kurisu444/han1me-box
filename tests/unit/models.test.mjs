@@ -3,7 +3,6 @@ import test from 'node:test';
 import { parseVideoDuration } from '../../src/domain/models/video.ts';
 import {
   createSearchQuery,
-  createSearchRouteRequest,
   hasSearchCriteria,
   searchQueriesEqual,
   searchQueryFromJson,
@@ -67,7 +66,6 @@ test('搜索页码不参与 URL、持久化和相等比较，标签顺序参与�
   assert.equal(searchQueriesEqual(query, { ...query, tags: ['b', 'a'] }), false);
   assert.equal(hasSearchCriteria(createSearchQuery({ broad: true })), false);
   assert.equal(hasSearchCriteria(query), true);
-  assert.notEqual(createSearchRouteRequest().sessionId, createSearchRouteRequest().sessionId);
   const first = createSearchQuery();
   first.tags.push('a');
   assert.deepEqual(createSearchQuery().tags, []);

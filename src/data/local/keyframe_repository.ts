@@ -33,16 +33,20 @@ async function edit(
   let changed = false;
   await updateJsonStore<SavedKeyframes>('keyframes.json', (saved) => {
     const next = change(positions(saved[id]));
-    if (!next) return saved;
+    if (!next) {
+      return saved;
+    }
     changed = true;
     const existing = saved[id];
     const result = { ...saved };
-    if (!next.length) delete result[id];
-    else
+    if (!next.length) {
+      delete result[id];
+    } else {
       result[id] = {
         title: title ?? (Array.isArray(existing) ? id : (existing?.title ?? id)),
         keyframes: next,
       };
+    }
     return result;
   });
   return changed;
@@ -61,7 +65,9 @@ export const add = (id: string, value: number, title?: string) =>
 export const updatePosition = (id: string, old: number, value: number) =>
   edit(id, (items) => {
     const remaining = items.filter((item) => item !== old);
-    if (value < 0 || remaining.some((item) => Math.abs(item - value) < 10000)) return undefined;
+    if (value < 0 || remaining.some((item) => Math.abs(item - value) < 10000)) {
+      return undefined;
+    }
     return [...remaining, value].sort((a, b) => a - b);
   });
 export const remove = (id: string, value: number) =>

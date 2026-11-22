@@ -1,7 +1,7 @@
 import { useMemo, createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import { useSettings, useSettingsReady } from '../../app/settings_context';
+import { useSettings } from '../../app/settings_context';
 import { resolvedBaseUrl } from '../../core/settings';
-import { type Account } from '../../domain/models/account';
+import type { Account } from '../../domain/models/account';
 import * as store from '../../data/local/account_store';
 import * as api from '../../data/han1me_repository';
 import { queryClient } from '../../data/han1me_repository';
@@ -34,24 +34,28 @@ const withoutClearance = (value: string) =>
     .trim();
 export function AccountProvider({ children }: { children: ReactNode }) {
   const settings = useSettings();
-  const settingsReady = useSettingsReady();
   const [loadedBase, setLoadedBase] = useState('');
   const [account, setAccount] = useState<Account>();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const base = useMemo(() => resolvedBaseUrl(settings), [settings]);
   useEffect(() => {
-    if (!settingsReady) return;
     let active = true;
     async function load() {
       api.clearRequests();
       const saved = await store.readAccount(base);
-      if (!active) return;
+      if (!active) {
+        return;
+      }
       setAccounts(await store.readAllAccounts(base));
       if (saved?.cookie) {
         const clean = { ...saved, cookie: withoutClearance(saved.cookie) };
         await window.electron.session.importCookies(base, clean.cookie);
-        if (clean.cookie !== saved.cookie) await store.writeAccount(base, clean);
-        if (!active) return;
+        if (clean.cookie !== saved.cookie) {
+          await store.writeAccount(base, clean);
+        }
+        if (!active) {
+          return;
+        }
         setAccount(clean);
         setLoadedBase(base);
         try {
@@ -59,12 +63,18 @@ export function AccountProvider({ children }: { children: ReactNode }) {
             ...(await queryClient.fetchQuery(api.account(base))),
             cookie: clean.cookie,
           };
-          if (!active) return;
+          if (!active) {
+            return;
+          }
           setAccount(profile);
           await store.writeAccount(base, { ...profile, id: profile.id! });
-          if (profile.id) await queryClient.fetchQuery(remoteLibrary(base, profile.id));
+          if (profile.id) {
+            await queryClient.fetchQuery(remoteLibrary(base, profile.id));
+          }
         } catch {}
-        if (active) setAccounts(await store.readAllAccounts(base));
+        if (active) {
+          setAccounts(await store.readAllAccounts(base));
+        }
       } else {
         setAccount(undefined);
         setLoadedBase(base);
@@ -74,7 +84,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     return () => {
       active = false;
     };
-  }, [base, settingsReady]);
+  }, [base]);
 
   async function refreshAccounts() {
     setAccounts(await store.readAllAccounts(base));
@@ -93,7 +103,9 @@ export function AccountProvider({ children }: { children: ReactNode }) {
   }
 
   async function activate(value: Account) {
-    if (!value.id) return;
+    if (!value.id) {
+      return;
+    }
     api.clearRequests();
     await window.electron.session.clearCookies(base);
     await window.electron.session.importCookies(base, value.cookie);
@@ -103,7 +115,9 @@ export function AccountProvider({ children }: { children: ReactNode }) {
   }
 
   async function remove(value: Account) {
-    if (!value.id) return;
+    if (!value.id) {
+      return;
+    }
     await store.removeAccount(base, value.id);
     if (account?.id === value.id) {
       api.clearRequests();
@@ -114,14 +128,18 @@ export function AccountProvider({ children }: { children: ReactNode }) {
   }
 
   async function refresh() {
-    if (!account) return;
+    if (!account) {
+      return;
+    }
     try {
       api.clearRequests();
       const next = { ...(await queryClient.fetchQuery(api.account(base))), cookie: account.cookie };
       setAccount(next);
       await store.writeAccount(base, { ...next, id: next.id! });
       try {
-        if (next.id) await queryClient.fetchQuery(remoteLibrary(base, next.id));
+        if (next.id) {
+          await queryClient.fetchQuery(remoteLibrary(base, next.id));
+        }
       } catch {}
       await refreshAccounts();
     } catch {}
@@ -129,14 +147,17 @@ export function AccountProvider({ children }: { children: ReactNode }) {
 
   async function logout() {
     api.clearRequests();
-    if (account) await remove(account);
-    else await window.electron.session.clearCookies(base);
+    if (account) {
+      await remove(account);
+    } else {
+      await window.electron.session.clearCookies(base);
+    }
   }
 
   return (
     <AccountContext
       value={{
-        ready: settingsReady && loadedBase === base,
+        ready: loadedBase === base,
         account,
         accounts,
         saveCookie,

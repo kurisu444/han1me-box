@@ -4,7 +4,7 @@
 npm test                  # 全部核心回归
 npm run test:unit         # 无窗口的单元测试
 npm run test:integration  # Electron 集成测试，窗口始终隐藏
-npm run test:login        # 本机 Chrome 登录回归，需要已安装 Chrome；使用无界面模式
+npm run test:login        # 窗口内登录与验证回归，使用隐藏窗口
 ```
 
 若终端继承了 `ELECTRON_RUN_AS_NODE`，Linux 下使用 `env -u ELECTRON_RUN_AS_NODE npm test`。
@@ -24,6 +24,6 @@ npm run test:login        # 本机 Chrome 登录回归，需要已安装 Chrome�
 
 `run-logic.cjs` 统一加载包含 JSON 资源和无扩展名导入的 TypeScript 业务测试。
 
-`integration/login.cjs` 使用本地站点和临时 Chrome profile，验证站点 Cookie 回传、匿名会话不会误判为成功、取消登录、再次添加账号及找不到 Chrome 时的内置窗口回退。它不访问真实 Google 账号，不验证 Google 是否允许登录。
+`integration/login.cjs` 使用本地站点和临时会话，验证登录与验证共用主窗口、Cookie 共享、取消登录恢复账号、同页处理新窗口链接、尺寸变化和资源释放。它不访问真实 Google 账号或 Cloudflare 服务。
 
 集成测试只访问本地 HTTP 夹具，使用独立临时数据目录；应用测试构建到临时目录，结束后清理。测试不会访问真实账号、修改日常数据、输出截图或留下构建产物。

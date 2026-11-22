@@ -1,11 +1,10 @@
-import { useSettings } from '../../app/settings_context';
 import { useI18n } from '../../app/i18n';
 import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { Box, Card, CardActionArea, Chip, Stack, Typography, useMediaQuery } from '@mui/material';
+import { Box, Card, CardActionArea, Stack, Typography, useMediaQuery } from '@mui/material';
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import ImageNotSupportedOutlinedIcon from '@mui/icons-material/ImageNotSupportedOutlined';
-import { type VideoCard } from '../../domain/models/video';
+import type { VideoCard } from '../../domain/models/video';
 
 export const cardGridSx = {
   display: 'grid',
@@ -33,8 +32,11 @@ export function VideoCover({
   const [source, setSource] = useState(url);
 
   function imageFailed() {
-    if (fallbackUrl && source !== fallbackUrl) setSource(fallbackUrl);
-    else setFailed(true);
+    if (fallbackUrl && source !== fallbackUrl) {
+      setSource(fallbackUrl);
+    } else {
+      setFailed(true);
+    }
   }
 
   if (!url || failed) {
@@ -84,10 +86,6 @@ export function VideoCardTile({
   vertical?: boolean;
   onSelect?: () => void;
 }) {
-  const tr = useI18n();
-
-  const settings = useSettings();
-
   const horizontal = compact && !vertical;
   const content = (
     <Box
@@ -100,39 +98,61 @@ export function VideoCardTile({
       <Box
         sx={{
           position: 'relative',
-          aspectRatio: compact ? '3 / 4' : settings.useHorizontalSearchCards ? '16 / 9' : '0.58',
+          aspectRatio: compact ? '3 / 4' : '16 / 9',
+          borderRadius: '10px',
           overflow: 'hidden',
           alignSelf: 'start',
+          '& img': { transition: 'transform 0.2s ease' },
         }}
       >
         <VideoCover key={video.coverUrl} url={video.coverUrl} title={video.title} />
-        {video.duration && (
-          <Chip
-            label={video.duration}
-            size="small"
+        {(video.duration || video.views || video.rating) && (
+          <Stack
+            direction="row"
+            spacing={0.75}
             sx={{
               position: 'absolute',
-              right: 6,
-              bottom: 6,
-              bgcolor: 'rgba(0, 0, 0, 0.75)',
+              inset: 'auto 0 0',
+              px: 1,
+              pt: 2.5,
+              pb: 0.6,
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              background: 'linear-gradient(transparent, rgba(0, 0, 0, 0.78))',
               color: '#fff',
-              height: 22,
+              fontSize: 11,
+              lineHeight: 1,
+              pointerEvents: 'none',
             }}
-          />
+          >
+            <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', minWidth: 0 }}>
+              {video.views && <VisibilityOutlinedIcon sx={{ fontSize: 13, flexShrink: 0 }} />}
+              <Typography component="span" noWrap sx={{ fontSize: 11, color: 'inherit' }}>
+                {[video.views, video.rating].filter(Boolean).join(' · ')}
+              </Typography>
+            </Stack>
+            {video.duration && (
+              <Typography
+                component="span"
+                sx={{ fontSize: 11, fontWeight: 500, color: 'inherit', flexShrink: 0 }}
+              >
+                {video.duration}
+              </Typography>
+            )}
+          </Stack>
         )}
       </Box>
       <Stack
-        spacing={0.5}
-        sx={{
-          p: 1.5,
-          minWidth: 0,
-        }}
+        spacing={0.35}
+        sx={{ px: horizontal ? 1.25 : 0.25, pt: horizontal ? 0.5 : 1, pb: 0.5, minWidth: 0 }}
       >
         <Typography
           component="h3"
           variant="subtitle2"
           title={video.title}
           sx={{
+            fontSize: 13,
+            lineHeight: 1.35,
             display: '-webkit-box',
             WebkitLineClamp: 2,
             WebkitBoxOrient: 'vertical',
@@ -142,35 +162,9 @@ export function VideoCardTile({
         >
           {video.title}
         </Typography>
-        {video.artist && (
-          <Typography variant="caption" color="text.secondary" noWrap>
-            {video.artist}
-          </Typography>
-        )}
-        <Stack
-          direction="row"
-          spacing={0.5}
-          sx={{
-            alignItems: 'center',
-            color: 'text.secondary',
-          }}
-        >
-          {video.views && (
-            <VisibilityOutlinedIcon
-              sx={{
-                fontSize: '1rem',
-              }}
-            />
-          )}
-          <Typography variant="caption">
-            {[video.views && tr('{0} 次观看', video.views), video.rating]
-              .filter(Boolean)
-              .join(' · ')}
-          </Typography>
-        </Stack>
-        {video.uploadTime && (
-          <Typography variant="caption" color="text.secondary">
-            {video.uploadTime}
+        {(video.artist || video.uploadTime) && (
+          <Typography variant="caption" color="text.secondary" noWrap sx={{ fontSize: 11.5 }}>
+            {[video.artist, video.uploadTime].filter(Boolean).join(' · ')}
           </Typography>
         )}
       </Stack>
@@ -178,7 +172,9 @@ export function VideoCardTile({
   );
 
   function select(event: React.MouseEvent) {
-    if (!onSelect) return;
+    if (!onSelect) {
+      return;
+    }
     event.preventDefault();
     onSelect();
   }
@@ -186,12 +182,16 @@ export function VideoCardTile({
   return (
     <Card
       component="article"
+      elevation={0}
       sx={{
         minWidth: 0,
         height: '100%',
         flexShrink: 0,
-        borderColor: selected ? 'primary.main' : 'divider',
-        bgcolor: selected ? 'action.selected' : 'background.paper',
+        border: selected ? 1.5 : 0,
+        borderColor: selected ? 'primary.main' : 'transparent',
+        bgcolor: selected ? 'action.selected' : 'transparent',
+        borderRadius: '10px',
+        '&:hover img': { transform: 'scale(1.03)' },
       }}
     >
       {video.id ? (
@@ -202,6 +202,8 @@ export function VideoCardTile({
           aria-current={selected ? 'page' : undefined}
           sx={{
             height: '100%',
+            borderRadius: '10px',
+            '&:hover .MuiCardActionArea-focusHighlight': { opacity: 0 },
           }}
         >
           {content}
@@ -235,8 +237,6 @@ export function CompactVideoCard({
   );
 }
 
-const videoGridCardWidth = { min: 220, max: 280 };
-
 export function VideoGrid({
   children,
   layout = 'grid',
@@ -244,10 +244,8 @@ export function VideoGrid({
   children: ReactNode;
   layout?: 'grid' | 'row' | 'compact';
 }) {
-  const settings = useSettings();
   const wide = useMediaQuery('(min-width:700px)');
-
-  const cardWidth = settings.useHorizontalSearchCards ? (wide ? 220 : 154) : wide ? 170 : 132;
+  const cardWidth = wide ? 220 : 154;
 
   return (
     <Box
@@ -265,19 +263,20 @@ export function VideoGrid({
           : {
               display: 'grid',
               gridTemplateColumns:
-                layout === 'compact'
-                  ? 'repeat(3, minmax(0, 1fr))'
-                  : `repeat(auto-fill, minmax(${videoGridCardWidth.min}px, 1fr))`,
+                layout === 'compact' ? 'repeat(3, minmax(0, 1fr))' : 'repeat(5, minmax(0, 1fr))',
+              gap: '16px',
               ...(layout === 'grid' && {
-                overflowX: 'auto',
-                '& > *': {
-                  width: '100%',
-                  minWidth: videoGridCardWidth.min,
-                  maxWidth: videoGridCardWidth.max,
+                '@media (max-width:1099px)': {
+                  gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+                },
+                '@media (max-width:849px)': {
+                  gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+                },
+                '@media (max-width:619px)': {
+                  gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                  gap: '10px',
                 },
               }),
-              gap: layout === 'compact' ? '16px' : '20px',
-              '@media (max-width:620px)': { gap: '10px' },
             }
       }
     >

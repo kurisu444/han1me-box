@@ -1,14 +1,3 @@
-export interface SearchRouteRequest {
-  sessionId: string;
-  initialUrl?: string;
-}
-
-let sequence = 0;
-
-export function createSearchRouteRequest(initialUrl?: string): SearchRouteRequest {
-  return { sessionId: `${Date.now()}-${sequence++}`, initialUrl };
-}
-
 export interface SearchQuery {
   text: string;
   genre: string;
@@ -37,10 +26,14 @@ export function createSearchQuery(values: Partial<SearchQuery> = {}): SearchQuer
 }
 
 export function searchQueryFromUri(value?: string | null): SearchQuery {
-  if (value == null) return createSearchQuery();
+  if (value == null) {
+    return createSearchQuery();
+  }
   // 基址仅用于解析相对路径，不发起网络请求。
   const uri = URL.parse(value, 'https://search.invalid');
-  if (!uri) return createSearchQuery();
+  if (!uri) {
+    return createSearchQuery();
+  }
   const parameters = uri.searchParams;
   return createSearchQuery({
     text: parameters.get('query') ?? '',
@@ -57,7 +50,9 @@ export function searchQueryFromUri(value?: string | null): SearchQuery {
 export function searchQueryToUri(query: SearchQuery): string {
   const parameters = new URLSearchParams();
   const add = (key: string, value: string) => {
-    if (value.length > 0) parameters.set(key, value);
+    if (value.length > 0) {
+      parameters.set(key, value);
+    }
   };
 
   add('query', query.text);
@@ -66,8 +61,12 @@ export function searchQueryToUri(query: SearchQuery): string {
   add('date', query.date);
   add('duration', query.duration);
   add('type', query.type);
-  for (const tag of query.tags) parameters.append('tags[]', tag);
-  if (query.broad) parameters.set('broad', 'on');
+  for (const tag of query.tags) {
+    parameters.append('tags[]', tag);
+  }
+  if (query.broad) {
+    parameters.set('broad', 'on');
+  }
   // 搜索 URL 编码 * 并保留 ~，保持站点查询格式。
   return `/search?${parameters.toString().replace(/\*/g, '%2A').replace(/%7E/g, '~')}`;
 }

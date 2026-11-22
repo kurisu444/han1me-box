@@ -1,5 +1,5 @@
 import { cardGridSx } from '../shared/video_card';
-import { type VideoDetail } from '../../domain/models/video';
+import type { VideoDetail } from '../../domain/models/video';
 import { useI18n } from '../../app/i18n';
 import { ImageGallery } from '../shared/image_gallery';
 import { MonthNavigation, previewMonth } from './month_navigation';
@@ -18,7 +18,7 @@ import {
 import * as api from '../../data/remote/getchu_api';
 import { useQuery } from '@tanstack/react-query';
 import { RequestError, LoadingState } from '../shared/request_error';
-import { type GetchuPreviewItem } from '../../domain/models/getchu_preview';
+import type { GetchuPreviewItem } from '../../domain/models/getchu_preview';
 
 function Items({ items }: { items: GetchuPreviewItem[] }) {
   return (
@@ -113,8 +113,12 @@ export function GetchuDetailPage() {
     navigate(`/video/${video.id}`, { state: { localVideo: video } });
   }
 
-  if (isPending) return <LoadingState label={tr('正在加载详情…')} />;
-  if (error) return <RequestError error={error} onRetry={refetch} />;
+  if (isPending) {
+    return <LoadingState label={tr('正在加载详情…')} />;
+  }
+  if (error) {
+    return <RequestError error={error} onRetry={refetch} />;
+  }
 
   return (
     <Stack spacing={2}>

@@ -23,7 +23,7 @@ import {
 } from '@mui/material';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import PlaylistAddIcon from '@mui/icons-material/PlaylistAdd';
-import { type VideoDetail } from '../../domain/models/video';
+import type { VideoDetail } from '../../domain/models/video';
 
 export function VideoActions({ video }: { video: VideoDetail }) {
   const tr = useI18n();
@@ -55,7 +55,9 @@ export function VideoActions({ video }: { video: VideoDetail }) {
     );
 
   async function download(source = downloadSource(video.sources, settings.downloadQuality)) {
-    if (!source) return;
+    if (!source) {
+      return;
+    }
     try {
       const result = await window.electron.downloads.create(video, source, 'default');
       setNotice(
@@ -74,7 +76,7 @@ export function VideoActions({ video }: { video: VideoDetail }) {
   async function toggleFavorite() {
     setFavoriteOverride(!favorite);
     try {
-      if (account && actionToken && (video.currentUserId ?? account.id))
+      if (account && actionToken && (video.currentUserId ?? account.id)) {
         await api.setFavorite(
           base,
           actionToken,
@@ -82,7 +84,9 @@ export function VideoActions({ video }: { video: VideoDetail }) {
           video.id,
           !favorite,
         );
-      else await library.setFavorite(video, !favorite);
+      } else {
+        await library.setFavorite(video, !favorite);
+      }
       void invalidateRemoteLibrary();
     } catch (cause) {
       setFavoriteOverride(favorite);
@@ -92,7 +96,7 @@ export function VideoActions({ video }: { video: VideoDetail }) {
 
   async function selectPlaylist(id: string) {
     try {
-      if (account && token)
+      if (account && token) {
         await api.saveToPlaylist(
           base,
           token,
@@ -100,8 +104,11 @@ export function VideoActions({ video }: { video: VideoDetail }) {
           video.id,
           true,
         );
-      else if (id === '__watch_later__') await library.setWatchLater(video, true);
-      else await library.saveToPlaylist(video, id);
+      } else if (id === '__watch_later__') {
+        await library.setWatchLater(video, true);
+      } else {
+        await library.saveToPlaylist(video, id);
+      }
       void invalidateRemoteLibrary();
       setOpen(false);
     } catch (cause) {
@@ -125,19 +132,24 @@ export function VideoActions({ video }: { video: VideoDetail }) {
 
   async function share() {
     const text = `${video.title} (${video.id})`;
-    if (navigator.share) await navigator.share({ title: video.title, text });
-    else {
+    if (navigator.share) {
+      await navigator.share({ title: video.title, text });
+    } else {
       await navigator.clipboard.writeText(text);
       setNotice(tr('已复制'));
     }
   }
 
   async function createPlaylist() {
-    if (!title.trim()) return;
+    if (!title.trim()) {
+      return;
+    }
     try {
-      if (account && token)
+      if (account && token) {
         await api.createPlaylist(base, token, video.id, title.trim(), description.trim());
-      else await library.createPlaylistWithVideo(video, title.trim(), description.trim());
+      } else {
+        await library.createPlaylistWithVideo(video, title.trim(), description.trim());
+      }
       void invalidateRemoteLibrary();
       setCreating(false);
       setOpen(false);
@@ -149,9 +161,11 @@ export function VideoActions({ video }: { video: VideoDetail }) {
   async function subscribe() {
     setSubscriptionOverride(!subscribed);
     try {
-      if (account && actionToken && subscriptionUser && video.artistId)
+      if (account && actionToken && subscriptionUser && video.artistId) {
         await api.setSubscription(base, actionToken, subscriptionUser, video.artistId, !subscribed);
-      else await library.setSubscription(video, !subscribed);
+      } else {
+        await library.setSubscription(video, !subscribed);
+      }
       void invalidateRemoteLibrary();
     } catch (cause) {
       setSubscriptionOverride(subscribed);

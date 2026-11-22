@@ -4,8 +4,8 @@ const path = require('node:path');
 const os = require('node:os');
 const http = require('node:http');
 const assert = require('node:assert/strict');
-const downloads = require('../../electron/downloads');
-const { registerLocalMediaProtocol } = require('../../electron/http');
+const downloads = require('../../dist-electron/downloads');
+const { registerLocalMediaProtocol } = require('../../dist-electron/http');
 protocol.registerSchemesAsPrivileged([
   {
     scheme: 'han1me-local',

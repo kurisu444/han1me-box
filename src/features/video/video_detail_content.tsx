@@ -6,7 +6,7 @@ import { localizeTag, searchLocale } from '../../data/search_option_catalog';
 import { useState } from 'react';
 import { Button, Alert, Avatar, Box, Chip, Link, Paper, Stack, Typography } from '@mui/material';
 import { translateVideo } from '../../data/remote/google_translate_api';
-import { type VideoTranslation, type VideoDetail } from '../../domain/models/video';
+import type { VideoTranslation, VideoDetail } from '../../domain/models/video';
 import { useSettings } from '../../app/settings_context';
 import { Link as RouterLink } from 'react-router-dom';
 
@@ -53,7 +53,9 @@ export function VideoDetailContent({
     );
     try {
       const cookies = await window.electron.session.cookies(resolvedBaseUrl(settings));
-      if (cookies) await account.saveCookie(cookies);
+      if (cookies) {
+        await account.saveCookie(cookies);
+      }
     } catch {}
     onRefresh?.();
   }

@@ -14,8 +14,9 @@ test('Backup ZIP interoperates with external deflated UTF-8 archives and data de
     showOpenDialog: async () => ({ filePaths: [archivePath] }),
   };
   const module = { exports: {} };
-  vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../../electron/backup.js'), 'utf8'), {
+  vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../../dist-electron/backup.js'), 'utf8'), {
     module,
+    exports: module.exports,
     require: (name) => (name === 'electron' ? { dialog } : require(name)),
   });
   try {

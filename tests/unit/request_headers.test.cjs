@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
-const { mediaReferer } = require('../../electron/http');
+const { mediaReferer } = require('../../dist-electron/http');
 
 test('Media Referer preserves the site, mirror path and root-only mirror settings', () => {
   assert.equal(
@@ -27,8 +27,9 @@ test('Media Referer preserves the site, mirror path and root-only mirror setting
 
 function setup() {
   const module = { exports: {} };
-  vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../../electron/http.js'), 'utf8'), {
+  vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../../dist-electron/http.js'), 'utf8'), {
     module,
+    exports: module.exports,
     URL,
     require: () => ({ getSettings: () => ({ baseUrl: 'https://example.com' }) }),
   });
@@ -47,10 +48,14 @@ function setup() {
       },
     },
   };
-  module.exports.installRequestHeaders(session, {
-    id: 1,
-    getURL: () => 'http://localhost:5173/#/video/123',
-  });
+  module.exports.installRequestHeaders(
+    session,
+    {
+      id: 1,
+      getURL: () => 'http://localhost:5173/#/video/123',
+    },
+    () => ({ baseUrl: 'https://example.com' }),
+  );
   return {
     reads,
     async headers(details) {

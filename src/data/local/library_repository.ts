@@ -1,4 +1,4 @@
-import { type VideoDetail } from '../../domain/models/video';
+import type { VideoDetail } from '../../domain/models/video';
 import {
   createPlaylist as playlistModel,
   followingVideoToJson,
@@ -160,7 +160,9 @@ export function saveToPlaylist(video: VideoDetail, id: string) {
   return update((current) => ({
     ...current,
     playlists: current.playlists.map((playlist) => {
-      if (playlist.id !== id) return playlist;
+      if (playlist.id !== id) {
+        return playlist;
+      }
       const videos = [
         followingVideo(video),
         ...playlist.videos.filter((item) => item.videoCode !== video.id),
@@ -206,7 +208,9 @@ export function removePlaylistVideos(id: string, ids: Set<string>) {
   return update((current) => ({
     ...current,
     playlists: current.playlists.map((playlist) => {
-      if (playlist.id !== id) return playlist;
+      if (playlist.id !== id) {
+        return playlist;
+      }
       const videos = playlist.videos.filter((item) => !ids.has(item.videoCode));
       return {
         ...playlist,
@@ -219,7 +223,9 @@ export function removePlaylistVideos(id: string, ids: Set<string>) {
 }
 export function setSubscription(video: VideoDetail, enabled: boolean) {
   const name = video.artist?.trim() ?? '';
-  if (!name) return Promise.resolve();
+  if (!name) {
+    return Promise.resolve();
+  }
   return update((current) => {
     const id = artistId(name);
     const artists = current.artists.filter((artist) => artist.id !== id);
@@ -236,7 +242,9 @@ export function setSubscription(video: VideoDetail, enabled: boolean) {
         followingVideo(video),
         ...(subscriptionVideos[id] ?? []).filter((item) => item.videoCode !== video.id),
       ];
-    } else delete subscriptionVideos[id];
+    } else {
+      delete subscriptionVideos[id];
+    }
     return { ...current, artists, subscriptionVideos };
   });
 }
@@ -244,7 +252,9 @@ export function addSubscriptionVideo(video: VideoDetail) {
   return update((current) => {
     const name = video.artist?.trim() ?? '';
     const id = artistId(name);
-    if (!name || !current.artists.some((artist) => artist.id === id)) return current;
+    if (!name || !current.artists.some((artist) => artist.id === id)) {
+      return current;
+    }
     return {
       ...current,
       subscriptionVideos: {

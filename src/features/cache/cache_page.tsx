@@ -23,7 +23,7 @@ import {
   Typography,
 } from '@mui/material';
 import { queryClient, video as videoQuery } from '../../data/han1me_repository';
-import { type VideoDetail, type VideoSource } from '../../domain/models/video';
+import type { VideoDetail, VideoSource } from '../../domain/models/video';
 import {
   localMediaUrl,
   type DownloadGroupSort,
@@ -134,19 +134,25 @@ export function CachePage() {
   }
 
   async function saveGroup() {
-    if (!name.trim()) return;
+    if (!name.trim()) {
+      return;
+    }
     await window.electron.downloads.updateGroup(editingId, name, sort);
     setEditing(false);
   }
 
   async function deleteSelected() {
-    if (!(await confirmation.confirm(tr('删除所选的 {0} 项下载及文件？', selected.length)))) return;
+    if (!(await confirmation.confirm(tr('删除所选的 {0} 项下载及文件？', selected.length)))) {
+      return;
+    }
     await window.electron.downloads.deleteTasks(selected);
     setSelected([]);
   }
 
   async function deleteTask(task: DownloadTask) {
-    if (!(await confirmation.confirm(tr('删除下载「{0}」及本地文件？', task.title)))) return;
+    if (!(await confirmation.confirm(tr('删除下载「{0}」及本地文件？', task.title)))) {
+      return;
+    }
     await window.electron.downloads.deleteTasks([task.id]);
   }
 
@@ -156,7 +162,9 @@ export function CachePage() {
   }
 
   async function removeGroup() {
-    if (!(await confirmation.confirm(tr('删除此分组？下载文件会保留。')))) return;
+    if (!(await confirmation.confirm(tr('删除此分组？下载文件会保留。')))) {
+      return;
+    }
     await window.electron.downloads.deleteGroup(group);
     setGroup('default');
     setSelected([]);
@@ -228,8 +236,12 @@ export function CachePage() {
     );
   }
 
-  if (error) return <Alert severity="error">{error.message}</Alert>;
-  if (!state) return <LoadingState label={tr('正在加载缓存…')} />;
+  if (error) {
+    return <Alert severity="error">{error.message}</Alert>;
+  }
+  if (!state) {
+    return <LoadingState label={tr('正在加载缓存…')} />;
+  }
 
   return (
     <Stack spacing={2}>
@@ -346,8 +358,8 @@ export function CachePage() {
 
 function formatBytes(bytes: number) {
   const units = ['B', 'KB', 'MB', 'GB'];
-  let value = bytes,
-    unit = 0;
+  let value = bytes;
+  let unit = 0;
   while (value >= 1024 && unit < units.length - 1) {
     value /= 1024;
     unit++;
@@ -356,13 +368,18 @@ function formatBytes(bytes: number) {
 }
 
 async function retryDownload(task: DownloadTask, baseUrl: string) {
-  if (task.status !== 'failed') return;
-  let detail: VideoDetail, source: VideoSource | undefined;
+  if (task.status !== 'failed') {
+    return;
+  }
+  let detail: VideoDetail;
+  let source: VideoSource | undefined;
   try {
     detail = await queryClient.fetchQuery(videoQuery(baseUrl, task.videoCode));
     source = detail.sources.find((item) => item.quality === task.quality) ?? detail.sources[0];
   } catch {
-    if (!task.sourceUrl) return;
+    if (!task.sourceUrl) {
+      return;
+    }
     detail = {
       id: task.videoCode,
       title: task.title,
@@ -374,5 +391,7 @@ async function retryDownload(task: DownloadTask, baseUrl: string) {
     };
     source = { quality: task.quality, url: task.sourceUrl };
   }
-  if (source) await window.electron.downloads.retry(task.id, detail, source);
+  if (source) {
+    await window.electron.downloads.retry(task.id, detail, source);
+  }
 }

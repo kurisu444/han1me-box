@@ -41,7 +41,7 @@ export function RequestError({ error, onRetry }: { error: Error; onRetry: () => 
         }}
       >
         {challenged
-          ? tr('验证成功后窗口会自动关闭并重试；也可手动关闭窗口后重试。')
+          ? tr('验证成功后会自动返回应用并重试；也可点击“返回应用”结束验证。')
           : error.message}
       </Typography>
       <Stack
@@ -59,7 +59,7 @@ export function RequestError({ error, onRetry }: { error: Error; onRetry: () => 
             variant="contained"
             startIcon={<VerifiedUserOutlinedIcon />}
           >
-            {verifying ? tr('等待验证完成…') : tr('打开验证窗口')}
+            {verifying ? tr('等待验证完成…') : tr('开始验证')}
           </Button>
         )}
         <Button onClick={onRetry} disabled={verifying} startIcon={<RefreshIcon />}>

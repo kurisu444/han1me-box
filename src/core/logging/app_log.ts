@@ -18,11 +18,15 @@ export function subscribe(listener: () => void) {
 }
 export function log(message: string, fields: Omit<AppLogEntry, 'timestamp' | 'message'> = {}) {
   entries = [...entries, { timestamp: Date.now(), message, ...fields }].slice(-800);
-  listeners.forEach((listener) => listener());
+  listeners.forEach((listener) => {
+    listener();
+  });
 }
 export function clear() {
   entries = [];
-  listeners.forEach((listener) => listener());
+  listeners.forEach((listener) => {
+    listener();
+  });
 }
 export function displayLine(entry: AppLogEntry) {
   const date = new Date(entry.timestamp);

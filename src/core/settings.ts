@@ -4,6 +4,8 @@ export type AppThemeColor =
   'rose' | 'blue' | 'teal' | 'amber' | 'green' | 'orange' | 'indigo' | 'pink' | 'purple' | 'custom';
 export type VideoAspectRatio = 'auto' | 'crop' | 'stretch' | 'ratio4x3';
 
+export const defaultHomeSectionOrder = ['最新上市', '最新上傳', '他們在看'] as const;
+
 export const defaultLibraryTabKeys = [
   'watch-later',
   'favorites',
@@ -22,12 +24,7 @@ export interface AppSettings {
   baseUrl: string;
   comicMode: boolean;
   videoBaseUrl: string;
-  useHorizontalSearchCards: boolean;
-  searchCardsPerRow: number; // 0 为自动排列。
   useCompactSearchCards: boolean;
-  useNavigationDrawer: boolean;
-  useLiquidGlassBottomBar: boolean;
-  hideActionsOnScroll: boolean;
   useCustomMirrorSite: boolean;
   customMirrorSite: string;
   appendCustomMirrorPath: boolean;
@@ -41,8 +38,6 @@ export interface AppSettings {
   keyframesEnabled: boolean;
   blockedCommentKeywords: string[];
   blockedCommentUsers: string[];
-  expandHomeVideoCards: boolean;
-  useHomeCategoryTabs: boolean;
   showHomeFeatured: boolean;
   homeSectionOrder: string[];
   hiddenHomeSections: string[];
@@ -82,12 +77,7 @@ export function createAppSettings(values: Partial<AppSettings> = {}): AppSetting
     baseUrl: 'https://hanime1.me',
     comicMode: false,
     videoBaseUrl: 'https://hanime1.me',
-    useHorizontalSearchCards: true,
-    searchCardsPerRow: 2,
     useCompactSearchCards: true,
-    useNavigationDrawer: false,
-    useLiquidGlassBottomBar: true,
-    hideActionsOnScroll: true,
     useCustomMirrorSite: false,
     customMirrorSite: '',
     appendCustomMirrorPath: true,
@@ -101,8 +91,6 @@ export function createAppSettings(values: Partial<AppSettings> = {}): AppSetting
     keyframesEnabled: true,
     blockedCommentKeywords: [],
     blockedCommentUsers: [],
-    expandHomeVideoCards: false,
-    useHomeCategoryTabs: false,
     showHomeFeatured: true,
     homeSectionOrder: [],
     hiddenHomeSections: [],
@@ -142,8 +130,12 @@ export function homeBaseUrl(settings: AppSettings): string {
 }
 
 export function resolvedBaseUrl(settings: AppSettings): string {
-  if (!mirrorActive(settings)) return settings.baseUrl;
-  if (settings.appendCustomMirrorPath) return settings.customMirrorSite;
+  if (!mirrorActive(settings)) {
+    return settings.baseUrl;
+  }
+  if (settings.appendCustomMirrorPath) {
+    return settings.customMirrorSite;
+  }
   return new URL(settings.customMirrorSite).origin;
 }
 
@@ -166,8 +158,9 @@ export function normalizeMirrorUrl(value: string): string {
     !uri.hostname ||
     normalized.includes('?') ||
     normalized.includes('#')
-  )
+  ) {
     return '';
+  }
   return normalized;
 }
 
@@ -214,7 +207,6 @@ export function appSettingsFromJson(values: Partial<AppSettings>): AppSettings {
     videoBaseUrl:
       values.videoBaseUrl ??
       (settings.baseUrl === 'https://hanimeone.me' ? 'https://hanime1.me' : settings.baseUrl),
-    searchCardsPerRow: Math.max(0, Math.min(settings.searchCardsPerRow, 6)),
     themeMode: ['system', 'light', 'dark'].includes(settings.themeMode)
       ? settings.themeMode
       : 'system',

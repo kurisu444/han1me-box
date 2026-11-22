@@ -54,7 +54,9 @@ export function VideoPlayerPanel({ video, onNext }: { video: VideoDetail; onNext
   const exitWindowFullscreen = useCallback(() => setWindowFullscreen(false), []);
   usePlayerKeyboard(player, windowFullscreen ? exitWindowFullscreen : undefined);
   useEffect(() => {
-    if (!windowFullscreen) return;
+    if (!windowFullscreen) {
+      return;
+    }
     const previous = document.documentElement.style.overflow;
     document.documentElement.style.overflow = 'hidden';
     return () => {
@@ -88,7 +90,9 @@ export function VideoPlayerPanel({ video, onNext }: { video: VideoDetail; onNext
       video.sources,
       selectedQuality.current ?? settings.preferredQuality,
     );
-    if (source?.url === sourceUrl) return;
+    if (source?.url === sourceUrl) {
+      return;
+    }
     const element = player.current;
     if (element) {
       savePlayback.current();
@@ -99,7 +103,9 @@ export function VideoPlayerPanel({ video, onNext }: { video: VideoDetail; onNext
   }, [video.sources, settings.preferredQuality, sourceUrl]);
   useEffect(() => {
     setStuck(false);
-    if (!buffering) return;
+    if (!buffering) {
+      return;
+    }
     const timer = window.setTimeout(() => setStuck(true), 10000);
     return () => window.clearTimeout(timer);
   }, [buffering, sourceUrl]);
@@ -110,22 +116,30 @@ export function VideoPlayerPanel({ video, onNext }: { video: VideoDetail; onNext
   }, []);
   useEffect(() => {
     const element = player.current;
-    if (!element) return;
+    if (!element) {
+      return;
+    }
     let playingSince: number | undefined;
     let watchedMs = 0;
     let lastSaved = 0;
     const report = () => {};
     function stopClock() {
-      if (playingSince !== undefined) watchedMs += performance.now() - playingSince;
+      if (playingSince !== undefined) {
+        watchedMs += performance.now() - playingSince;
+      }
       playingSince = undefined;
     }
     function flush() {
-      if (switching.current || element!.readyState === 0) return;
+      if (switching.current || element!.readyState === 0) {
+        return;
+      }
       if (playingSince !== undefined) {
         watchedMs += performance.now() - playingSince;
         playingSince = performance.now();
       }
-      if (preferences.current.incognitoPlayback) return;
+      if (preferences.current.incognitoPlayback) {
+        return;
+      }
       const duration = Number.isFinite(element!.duration)
         ? element!.duration
         : (parseVideoDuration(video.duration) ?? 0);
@@ -143,11 +157,14 @@ export function VideoPlayerPanel({ video, onNext }: { video: VideoDetail; onNext
     }
     function recordWatch() {
       stopClock();
-      if (watchedMs < 5000) return;
+      if (watchedMs < 5000) {
+        return;
+      }
       const amount = Math.floor(watchedMs);
       watchedMs = 0;
-      if (!preferences.current.incognitoPlayback)
+      if (!preferences.current.incognitoPlayback) {
         void watch.addTime(video.id, video.title, amount).catch(report);
+      }
     }
     function leave() {
       pause();
@@ -155,16 +172,22 @@ export function VideoPlayerPanel({ video, onNext }: { video: VideoDetail; onNext
     }
     const playing = () => {
       for (const other of document.querySelectorAll('video')) {
-        if (other !== element) other.pause();
+        if (other !== element) {
+          other.pause();
+        }
       }
-      if (playingSince === undefined) playingSince = performance.now();
+      if (playingSince === undefined) {
+        playingSince = performance.now();
+      }
     };
     const pause = () => {
       stopClock();
       flush();
     };
     const timeupdate = () => {
-      if (performance.now() - lastSaved >= 5000) flush();
+      if (performance.now() - lastSaved >= 5000) {
+        flush();
+      }
     };
     element.addEventListener('playing', playing);
     element.addEventListener('pause', pause);
@@ -189,8 +212,12 @@ export function VideoPlayerPanel({ video, onNext }: { video: VideoDetail; onNext
   useEffect(() => {
     async function visibilityChanged() {
       const element = player.current;
-      if (!document.hidden || !element || element.paused) return;
-      if (document.pictureInPictureElement === element) return;
+      if (!document.hidden || !element || element.paused) {
+        return;
+      }
+      if (document.pictureInPictureElement === element) {
+        return;
+      }
       if (settings.autoPictureInPicture && document.pictureInPictureEnabled) {
         try {
           await element.requestPictureInPicture();
@@ -204,13 +231,17 @@ export function VideoPlayerPanel({ video, onNext }: { video: VideoDetail; onNext
   }, [settings.autoPictureInPicture]);
   useEffect(() => {
     const element = player.current;
-    if (!element || !sourceUrl) return;
+    if (!element || !sourceUrl) {
+      return;
+    }
     const type = video.sources.find((item) => item.url === sourceUrl)?.type ?? '';
     const isHls = /\.m3u8(?:[?#]|$)/i.test(sourceUrl) || /(?:mpegurl|m3u8)/i.test(type);
     if (isHls && Hls.isSupported()) {
       const hls = new Hls();
       hls.on(Hls.Events.ERROR, (_event, error) => {
-        if (!error.fatal) return;
+        if (!error.fatal) {
+          return;
+        }
         setBuffering(false);
         setPlaybackError('视频加载中断，请重试或切换播放源。');
       });
@@ -245,11 +276,14 @@ export function VideoPlayerPanel({ video, onNext }: { video: VideoDetail; onNext
         );
       } catch {}
     }
-    if (player.current !== element || loadedSource !== element.currentSrc) return;
-    if (position > 0)
+    if (player.current !== element || loadedSource !== element.currentSrc) {
+      return;
+    }
+    if (position > 0) {
       element.currentTime = Number.isFinite(element.duration)
         ? Math.min(position, Math.max(0, element.duration - 0.1))
         : position;
+    }
     restored.current = true;
     switching.current = false;
     nextStart.current = undefined;
@@ -257,11 +291,14 @@ export function VideoPlayerPanel({ video, onNext }: { video: VideoDetail; onNext
       try {
         await element.play();
       } catch (error) {
-        if (element.currentSrc !== loadedSource || player.current !== element) return;
-        if ((error as Error).name === 'NotAllowedError')
+        if (element.currentSrc !== loadedSource || player.current !== element) {
+          return;
+        }
+        if ((error as Error).name === 'NotAllowedError') {
           setPlaybackError(tr('自动播放未开始，请点击播放器中的播放按钮。'));
-        else if ((error as Error).name !== 'AbortError')
+        } else if ((error as Error).name !== 'AbortError') {
           setPlaybackError(tr('播放失败：{0}', (error as Error).message));
+        }
       }
     }
   }
@@ -283,8 +320,11 @@ export function VideoPlayerPanel({ video, onNext }: { video: VideoDetail; onNext
   }
 
   function fullscreen() {
-    if (document.fullscreenElement) void document.exitFullscreen();
-    else void player.current!.parentElement!.requestFullscreen();
+    if (document.fullscreenElement) {
+      void document.exitFullscreen();
+    } else {
+      void player.current!.parentElement!.requestFullscreen();
+    }
   }
 
   function changeSpeed(event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
@@ -305,8 +345,11 @@ export function VideoPlayerPanel({ video, onNext }: { video: VideoDetail; onNext
       return;
     }
     const position = Math.round(element.currentTime * 1000);
-    if (!(await confirmation.confirm(tr('将 {0} 秒添加为关键帧？', (position / 1000).toFixed(1)))))
+    if (
+      !(await confirmation.confirm(tr('将 {0} 秒添加为关键帧？', (position / 1000).toFixed(1))))
+    ) {
       return;
+    }
     const added = await keyframes.add(video.id, position, video.title);
     setFrameNotice(added ? tr('关键帧已添加') : tr('与已有关键帧相隔不足 10 秒'));
     frames.refetch();
@@ -324,7 +367,9 @@ export function VideoPlayerPanel({ video, onNext }: { video: VideoDetail; onNext
 
   function playbackEnded() {
     savePlayback.current();
-    if (settings.autoPlayNext && !settings.loopPlayback) onNext?.();
+    if (settings.autoPlayNext && !settings.loopPlayback) {
+      onNext?.();
+    }
   }
 
   function playbackFailed(event: SyntheticEvent<HTMLVideoElement>) {
@@ -371,6 +416,7 @@ export function VideoPlayerPanel({ video, onNext }: { video: VideoDetail; onNext
         ...(windowFullscreen && {
           position: 'fixed',
           inset: 0,
+          top: 'var(--titlebar-height, 0px)',
           zIndex: (theme) => theme.zIndex.drawer + 1,
           borderRadius: 0,
           display: 'flex',

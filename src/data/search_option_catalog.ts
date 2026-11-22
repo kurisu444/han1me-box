@@ -31,12 +31,17 @@ export function searchOptionGroup(
   }));
   const lookup = new Map<string, SearchOption>();
   for (const option of options) {
-    for (const alias of [option.searchKey, ...Object.values(option.labels)])
-      if (alias) lookup.set(alias, option);
+    for (const alias of [option.searchKey, ...Object.values(option.labels)]) {
+      if (alias) {
+        lookup.set(alias, option);
+      }
+    }
   }
   for (const [alias, key] of Object.entries(aliases)) {
     const option = lookup.get(key);
-    if (option) lookup.set(alias, option);
+    if (option) {
+      lookup.set(alias, option);
+    }
   }
   return { options, aliases: lookup };
 }
@@ -69,7 +74,9 @@ export const searchOptionCatalog: SearchOptionCatalog = {
 export function lookupTag(value: string): SearchOption | undefined {
   for (const group of Object.values(searchOptionCatalog.tags)) {
     const option = group.aliases.get(value);
-    if (option) return option;
+    if (option) {
+      return option;
+    }
   }
 }
 export const canonicalTag = (value: string) => lookupTag(value)?.searchKey ?? value;

@@ -33,10 +33,16 @@ const tokenFrom = (page: Document) =>
   undefined;
 async function csrfToken(baseUrl: string, fresh = false) {
   const url = new URL(siteHomeUrl(baseUrl));
-  if (fresh) url.searchParams.set('_', String(Date.now()));
+  if (fresh) {
+    url.searchParams.set('_', String(Date.now()));
+  }
   const response = await http.get(url.href, { Referer: siteHomeUrl(baseUrl) });
-  if (isCloudflareResponse(response)) throw new CloudflareChallengeException(baseUrl);
-  if (response.statusCode >= 400) return undefined;
+  if (isCloudflareResponse(response)) {
+    throw new CloudflareChallengeException(baseUrl);
+  }
+  if (response.statusCode >= 400) {
+    return undefined;
+  }
   rememberOrigin(url.href, response.url);
   return (
     tokenFrom(new DOMParser().parseFromString(response.body, 'text/html'))?.trim() || undefined
@@ -70,7 +76,9 @@ async function form(url: string, data: Record<string, string>, token: string) {
     response = await submit();
   }
   checkResponse(response, url);
-  if (new URL(response.url).pathname === '/login') throw new Error('Authentication expired');
+  if (new URL(response.url).pathname === '/login') {
+    throw new Error('Authentication expired');
+  }
 }
 export async function account(base: string): Promise<Account> {
   const home = await document(siteHomeUrl(base));
@@ -78,7 +86,9 @@ export async function account(base: string): Promise<Account> {
     /\/user\/(\d+)/.exec(
       home.querySelector('#user-modal-trigger')?.getAttribute('href') ?? '',
     )?.[1] ?? /\d+/.exec(text(home.querySelector('.profile-sub-stats-id')) ?? '')?.[0];
-  if (!id) throw new Error('Account profile is unavailable');
+  if (!id) {
+    throw new Error('Account profile is unavailable');
+  }
   const edit = await document(siteEndpointUrl(base, `user/${id}/edit`));
   const numbers =
     (text(home.querySelector('.profile-sub-stats-new-line')) ?? '').match(/\d+/g)?.map(Number) ??
@@ -223,7 +233,9 @@ export async function removePlaylistItem(base: string, token: string, id: string
     true,
   );
   checkResponse(response, base);
-  if (JSON.parse(response.body)?.success !== true) throw new Error('Playlist item removal failed');
+  if (JSON.parse(response.body)?.success !== true) {
+    throw new Error('Playlist item removal failed');
+  }
 }
 export async function deleteHistory(base: string, token: string, id: string) {
   const origin = originFor(base);
@@ -236,8 +248,9 @@ export async function deleteHistory(base: string, token: string, id: string) {
   );
   checkResponse(response, base);
   const body = JSON.parse(response.body);
-  if (body && typeof body === 'object' && body.success !== true)
+  if (body && typeof body === 'object' && body.success !== true) {
     throw new Error('History deletion failed');
+  }
 }
 export const postComment = (
   base: string,
@@ -395,14 +408,20 @@ async function paged<T>(
     try {
       const fresh = parse(await document(url(number))).filter((item) => {
         const key = id(item);
-        if (seen.has(key)) return false;
+        if (seen.has(key)) {
+          return false;
+        }
         seen.add(key);
         return true;
       });
-      if (!fresh.length) break;
+      if (!fresh.length) {
+        break;
+      }
       items.push(...fresh);
     } catch (error) {
-      if (error instanceof CloudflareChallengeException) throw error;
+      if (error instanceof CloudflareChallengeException) {
+        throw error;
+      }
       break;
     }
   }

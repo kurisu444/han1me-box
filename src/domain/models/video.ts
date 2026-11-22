@@ -56,12 +56,16 @@ export interface VideoSource {
 /** 返回秒数，供原生 video 使用；无效或非正时长返回 null。 */
 export function parseVideoDuration(value?: string | null): number | null {
   const parts = value?.trim().split(':') ?? [];
-  if (parts.length < 2 || parts.length > 3) return null;
+  if (parts.length < 2 || parts.length > 3) {
+    return null;
+  }
 
   let seconds = 0;
   for (const part of parts) {
     const trimmed = part.trim();
-    if (!/^\d+$/.test(trimmed)) return null;
+    if (!/^\d+$/.test(trimmed)) {
+      return null;
+    }
     seconds = seconds * 60 + Number(trimmed);
   }
   return seconds <= 0 ? null : seconds;

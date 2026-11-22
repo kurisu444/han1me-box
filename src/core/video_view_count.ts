@@ -1,10 +1,14 @@
 export function parseVideoViewCount(text?: string | null): number {
-  if (!text) return 0;
+  if (!text) {
+    return 0;
+  }
   const normalized = text
     .replace(/[０-９]/g, (digit) => String.fromCharCode(digit.charCodeAt(0) - 0xfee0))
     .replace(/,/g, '');
   const match = normalized.match(/([0-9]+(?:\.[0-9]+)?)/);
-  if (!match) return 0;
+  if (!match) {
+    return 0;
+  }
   const unit = normalized.match(/(?<=[0-9.])([万萬亿億KkMmWw])/)?.[1];
   return Math.round(Number(match[1]) * unitMultiplier(unit));
 }

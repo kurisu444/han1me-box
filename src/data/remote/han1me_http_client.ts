@@ -12,16 +12,9 @@ async function logged(url: string, method: string, send: () => Promise<Han1meHtt
     message += ` error=${error}`;
     throw error;
   } finally {
-    const cookie = await window.electron.session.cookies(url);
-    const parts = cookie.split(';').map((part) => part.trim().toLowerCase());
-    const flags = [
-      ...(parts.some((part) => part.startsWith('remember_web=')) ? ['remember_web'] : []),
-      ...(parts.some((part) => part.startsWith('cf_clearance=')) ? ['cf_clearance'] : []),
-    ];
-    if (!flags.length && cookie.trim()) flags.push('other');
     const uri = new URL(url);
     const path = uri.pathname.length > 60 ? `${uri.pathname.slice(0, 60)}…` : uri.pathname;
-    log(`${message}${flags.length ? ` cookie=${flags.join('+')}` : ''}`, {
+    log(message, {
       method,
       url: `${uri.protocol}//${uri.hostname}${path}`,
       statusCode,

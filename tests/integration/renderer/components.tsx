@@ -43,7 +43,6 @@ function render(name: string, content: ReactNode) {
         <SettingsContext
           value={{
             settings: { ...settings, baseUrl: location.origin },
-            ready: true,
             save: async () => {},
           }}
         >

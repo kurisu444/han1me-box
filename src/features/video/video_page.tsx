@@ -9,7 +9,7 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import { useSettings } from '../../app/settings_context';
 import { resolvedBaseUrl } from '../../core/settings';
 import * as repository from '../../data/han1me_repository';
-import { type VideoDetail } from '../../domain/models/video';
+import type { VideoDetail } from '../../domain/models/video';
 import { RequestError, LoadingState } from '../shared/request_error';
 import { CompactVideoCard } from '../shared/video_card';
 import { useQuery } from '@tanstack/react-query';
@@ -31,16 +31,6 @@ export function VideoDetailView({
   const [params] = useSearchParams();
   const [translatedTitle, setTranslatedTitle] = useState<string>();
   const [commentsVisited, setCommentsVisited] = useState(false);
-  const [actionsVisible, setActionsVisible] = useState(true);
-  useEffect(() => {
-    let previous = window.scrollY;
-    function scrolling() {
-      setActionsVisible(window.scrollY <= previous);
-      previous = window.scrollY;
-    }
-    window.addEventListener('scroll', scrolling, { passive: true });
-    return () => window.removeEventListener('scroll', scrolling);
-  }, []);
   const [tab, setTab] = useState<'details' | 'comments'>('details');
   useEffect(() => {
     void addSubscriptionVideo(video);
@@ -65,7 +55,9 @@ export function VideoDetailView({
   }
 
   function switchEpisode(id: string) {
-    if (!id || id === video.id) return;
+    if (!id || id === video.id) {
+      return;
+    }
     const home = params.get('home');
     const query = home ? `?${new URLSearchParams({ home })}` : '';
     navigate(`/video/${encodeURIComponent(id)}${query}`, { replace: true });
@@ -73,7 +65,9 @@ export function VideoDetailView({
 
   function changeTab(_event: SyntheticEvent, value: 'details' | 'comments') {
     setTab(value);
-    if (value === 'comments') setCommentsVisited(true);
+    if (value === 'comments') {
+      setCommentsVisited(true);
+    }
   }
 
   return (
@@ -111,13 +105,7 @@ export function VideoDetailView({
             {metadata}
           </Typography>
         </Box>
-        <Box
-          sx={{
-            visibility: !settings.hideActionsOnScroll || actionsVisible ? 'visible' : 'hidden',
-          }}
-        >
-          <VideoActions video={video} />
-        </Box>
+        <VideoActions video={video} />
         <Tabs
           value={activeTab}
           onChange={changeTab}
@@ -239,8 +227,12 @@ export function VideoPage({ id, localVideo }: { id: string; localVideo?: VideoDe
 
   const detail = localVideo ? (data ? { ...data, sources: localVideo.sources } : localVideo) : data;
 
-  if (!localVideo && isPending) return <LoadingState label={tr('正在加载视频…')} />;
-  if (!localVideo && error) return <RequestError error={error} onRetry={refetch} />;
+  if (!localVideo && isPending) {
+    return <LoadingState label={tr('正在加载视频…')} />;
+  }
+  if (!localVideo && error) {
+    return <RequestError error={error} onRetry={refetch} />;
+  }
 
   return (
     <>

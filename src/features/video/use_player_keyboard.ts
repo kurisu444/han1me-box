@@ -14,14 +14,16 @@ export function usePlayerKeyboard(
     let previousSpeed: number | undefined;
     function seek(seconds: number) {
       const video = player.current!;
-      if (Number.isFinite(video.duration))
+      if (Number.isFinite(video.duration)) {
         video.currentTime = Math.max(0, Math.min(video.duration, video.currentTime + seconds));
+      }
     }
     function release() {
       clearTimeout(timer);
       timer = undefined;
-      if (previousSpeed !== undefined && player.current)
+      if (previousSpeed !== undefined && player.current) {
         player.current.playbackRate = previousSpeed;
+      }
       previousSpeed = undefined;
     }
     function down(event: KeyboardEvent) {
@@ -30,27 +32,33 @@ export function usePlayerKeyboard(
         target.closest(
           'input, textarea, select, [contenteditable="true"], [role="dialog"], [role="listbox"]',
         )
-      )
+      ) {
         return;
+      }
       if (event.key === 'Escape' && exitWindowFullscreen && !document.fullscreenElement) {
         exitWindowFullscreen();
         event.preventDefault();
         return;
       }
       const video = player.current;
-      if (!video || !video.readyState) return;
+      if (!video || !video.readyState) {
+        return;
+      }
       switch (event.key) {
         case 'ArrowLeft':
           seek(-10);
           break;
         case 'ArrowRight':
-          if (!event.repeat && !timer && previousSpeed === undefined)
+          if (!event.repeat && !timer && previousSpeed === undefined) {
             timer = setTimeout(() => {
               timer = undefined;
-              if (video.paused) return;
+              if (video.paused) {
+                return;
+              }
               previousSpeed = video.playbackRate;
               video.playbackRate = settings.longPressPlaybackSpeed;
             }, 450);
+          }
           break;
         case 'ArrowUp':
           video.volume = Math.min(1, video.volume + 0.1);
@@ -60,10 +68,11 @@ export function usePlayerKeyboard(
           break;
         case 'f':
         case 'F':
-          if (!event.repeat)
+          if (!event.repeat) {
             void (document.fullscreenElement
               ? document.exitFullscreen()
               : video.parentElement!.requestFullscreen());
+          }
           break;
         case 'Escape':
           navigate(params.get('home') ?? '/');
@@ -73,9 +82,14 @@ export function usePlayerKeyboard(
         case 'MediaPlayPause':
         case 'MediaPlay':
         case 'MediaPause':
-          if (target.closest('button, a')) return;
-          if (video.paused) void video.play();
-          else video.pause();
+          if (target.closest('button, a')) {
+            return;
+          }
+          if (video.paused) {
+            void video.play();
+          } else {
+            video.pause();
+          }
           break;
         default:
           return;
@@ -83,10 +97,14 @@ export function usePlayerKeyboard(
       event.preventDefault();
     }
     function up(event: KeyboardEvent) {
-      if (event.key !== 'ArrowRight') return;
+      if (event.key !== 'ArrowRight') {
+        return;
+      }
       const pending = timer !== undefined;
       release();
-      if (pending) seek(10);
+      if (pending) {
+        seek(10);
+      }
     }
     window.addEventListener('keydown', down);
     window.addEventListener('keyup', up);

@@ -24,8 +24,16 @@ function setup({ loadError, initialClearance } = {}) {
       return probe();
     },
   };
-  class FakeWindow extends EventEmitter {
-    webContents = Object.assign(new EventEmitter(), { getURL: () => this.url });
+  class FakeView {
+    webContents = Object.assign(new EventEmitter(), {
+      getURL: () => this.url,
+      isDestroyed: () => this.destroyed,
+      loadURL: (url) => this.loadURL(url),
+      close: () => this.close(),
+      focus() {},
+      setWindowOpenHandler() {},
+    });
+    setBounds() {}
     destroyed = false;
     loadURL(url) {
       this.url = url;
@@ -38,22 +46,32 @@ function setup({ loadError, initialClearance } = {}) {
     close() {
       assert.equal(this.destroyed, false);
       this.destroyed = true;
-      this.emit('closed');
+      this.webContents.emit('destroyed');
     }
   }
-  const module = { exports: {} };
-  vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../../electron/account.js'), 'utf8'), {
-    module,
-    require: () => ({ BrowserWindow: FakeWindow, session: { defaultSession: browserSession } }),
-    setInterval(callback, milliseconds) {
-      assert.equal(milliseconds, 700);
-      timers.add(callback);
-      return callback;
-    },
-    clearInterval: (timer) => timers.delete(timer),
+  const parent = Object.assign(new EventEmitter(), {
+    contentView: { addChildView() {}, removeChildView() {} },
+    webContents: { send() {}, focus() {} },
+    getContentSize: () => [1280, 800],
+    isDestroyed: () => false,
   });
+  const module = { exports: {} };
+  vm.runInNewContext(
+    fs.readFileSync(path.join(__dirname, '../../dist-electron/account.js'), 'utf8'),
+    {
+      module,
+      exports: module.exports,
+      require: () => ({ WebContentsView: FakeView, session: { defaultSession: browserSession } }),
+      setInterval(callback, milliseconds) {
+        assert.equal(milliseconds, 700);
+        timers.add(callback);
+        return callback;
+      },
+      clearInterval: (timer) => timers.delete(timer),
+    },
+  );
   return {
-    ...module.exports,
+    openVerification: (url) => module.exports.openVerification(url, parent),
     windows,
     timers,
     setClearance(value) {

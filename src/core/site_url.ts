@@ -1,16 +1,22 @@
 import { log } from './logging/app_log';
 
 export function siteHomeUrl(baseUrl: string): string {
-  if (!baseUrl) return baseUrl;
+  if (!baseUrl) {
+    return baseUrl;
+  }
   const trimmed = baseUrl.replace(/\/+$/, '');
   const uri = URL.parse(trimmed, 'https://site.invalid');
   return uri?.pathname === '/' || uri?.pathname === '' ? `${trimmed}/` : trimmed;
 }
 
 export function siteEndpointUrl(baseUrl: string, path: string): string {
-  if (!baseUrl) return baseUrl;
+  if (!baseUrl) {
+    return baseUrl;
+  }
   const trimmedBase = baseUrl.replace(/\/+$/, '');
-  if (!path.trim()) return trimmedBase;
+  if (!path.trim()) {
+    return trimmedBase;
+  }
   return `${trimmedBase}/${path.replace(/^\/+/, '')}`;
 }
 

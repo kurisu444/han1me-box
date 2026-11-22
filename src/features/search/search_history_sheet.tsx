@@ -15,7 +15,7 @@ import {
 import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
 import { loadSearchHistory, removeSearchHistory } from './search_controller';
 import { localize, localizeTag, searchOptionCatalog } from '../../data/search_option_catalog';
-import { type SearchQuery } from '../../domain/models/search_query';
+import type { SearchQuery } from '../../domain/models/search_query';
 import { useQuery } from '@tanstack/react-query';
 import { LoadingState } from '../shared/request_error';
 

@@ -52,7 +52,9 @@ export function progress({
 }
 
 export function addTime(id: string, title: string, watchedMs: number): Promise<void> {
-  if (watchedMs <= 0) return Promise.resolve();
+  if (watchedMs <= 0) {
+    return Promise.resolve();
+  }
   return updateJsonStore<Partial<WatchState>>('watch_store.json', (value) => {
     const current = watchState(value);
     const now = new Date();

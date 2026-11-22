@@ -8,8 +8,8 @@ import {
   searchQueryFromJson,
   searchQueryToJson,
 } from '../../domain/models/search_query';
-import { type AppSettings } from '../../core/settings';
-import { type SearchResult } from '../../data/remote/han1me_api';
+import type { AppSettings } from '../../core/settings';
+import type { SearchResult } from '../../data/remote/han1me_api';
 import { homeVideoVisible } from '../video/video_helpers';
 import { jsonRecords, readJsonStore, updateJsonStore } from '../../data/local/json_store';
 
@@ -57,7 +57,9 @@ export async function loadSearchHistory(): Promise<SearchQuery[]> {
   return queries(await readJsonStore<HistoryFile>('search_history.json'));
 }
 export function recordSearch(query: SearchQuery): Promise<void> {
-  if (!hasSearchCriteria(query)) return Promise.resolve();
+  if (!hasSearchCriteria(query)) {
+    return Promise.resolve();
+  }
   return updateJsonStore<HistoryFile>('search_history.json', (data) => ({
     items: [query, ...queries(data).filter((item) => !searchQueriesEqual(item, query))]
       .slice(0, 30)

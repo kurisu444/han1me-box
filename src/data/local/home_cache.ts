@@ -12,7 +12,9 @@ export async function readHomeCache(
 ): Promise<HomeFeed | undefined> {
   const cache = await readJsonStore<HomeCache>('home_cache.json');
   const value = cache[cacheKey(baseUrl, accountId)];
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return undefined;
+  }
   const card = (item: Partial<VideoCard>): VideoCard => ({
     ...item,
     id: item.id ?? '',
@@ -44,7 +46,9 @@ export function writeHomeCache(
 export async function readComicHome() {
   const cache = await readJsonStore<Record<string, ComicHome>>('home_cache.json');
   const home = cache['home_feed_v2:comics'];
-  if (!home || typeof home !== 'object' || Array.isArray(home)) return undefined;
+  if (!home || typeof home !== 'object' || Array.isArray(home)) {
+    return undefined;
+  }
   return {
     trending: jsonRecords<ComicCard>(home.trending).map(comicCardFromJson),
     latest: jsonRecords<ComicCard>(home.latest).map(comicCardFromJson),

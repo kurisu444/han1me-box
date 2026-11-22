@@ -9,7 +9,9 @@ export function videoAspectRatio(video: VideoSize): number {
   const { videoWidth: width, videoHeight: height } = video;
   if (width > 0 && height > 0) {
     const ratio = width / height;
-    if (Number.isFinite(ratio) && ratio >= 0.1 && ratio <= 10) return ratio;
+    if (Number.isFinite(ratio) && ratio >= 0.1 && ratio <= 10) {
+      return ratio;
+    }
   }
   return 16 / 9;
 }

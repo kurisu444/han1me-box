@@ -7,7 +7,9 @@ export function useConfirmation() {
   const pending = useRef<(value: boolean) => void>(() => {});
 
   function confirm(text: string) {
-    if (message) return Promise.resolve(false);
+    if (message) {
+      return Promise.resolve(false);
+    }
     setMessage(text);
     return new Promise<boolean>((resolve) => {
       pending.current = resolve;

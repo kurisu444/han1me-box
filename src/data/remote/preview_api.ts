@@ -10,7 +10,9 @@ function documentTitle(document: Document, fallback: string) {
     .split('-')
     .map((part) => part.trim())
     .filter(Boolean);
-  if (parts.includes(fallback)) return fallback;
+  if (parts.includes(fallback)) {
+    return fallback;
+  }
   return parts.length > 1 && parts[1] !== 'Hanime1.me' ? parts[1] : fallback;
 }
 async function upcoming(base: string): Promise<PreviewFeed> {
@@ -28,8 +30,9 @@ async function upcoming(base: string): Promise<PreviewFeed> {
       tags: [],
       previewImages: [],
     };
-    if (item.id && item.title && !items.some((existing) => existing.id === item.id))
+    if (item.id && item.title && !items.some((existing) => existing.id === item.id)) {
       items.push(item);
+    }
   }
   return {
     title: documentTitle(document, '新番預告'),
@@ -41,7 +44,9 @@ async function upcoming(base: string): Promise<PreviewFeed> {
 export async function previews(base: string, month: string): Promise<PreviewFeed> {
   const now = new Date();
   const current = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}`;
-  if (month >= current) return upcoming(base);
+  if (month >= current) {
+    return upcoming(base);
+  }
   try {
     const { document } = await documentWithBody(siteEndpointUrl(base, `previews/${month}`));
     const header = document.querySelector('.preview-top-content');
@@ -68,7 +73,7 @@ export async function previews(base: string, month: string): Promise<PreviewFeed
         ).filter(Boolean),
       };
     }).filter((item) => item.title && item.coverUrl);
-    if (items.length)
+    if (items.length) {
       return {
         title: text(header?.querySelector('h1')) ?? `${month} previews`,
         description: text(header?.querySelector('p')) ?? '',
@@ -78,6 +83,7 @@ export async function previews(base: string, month: string): Promise<PreviewFeed
         ),
         items,
       };
+    }
   } catch {}
   return upcoming(base);
 }

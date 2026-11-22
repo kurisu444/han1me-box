@@ -27,7 +27,9 @@ export async function readAccount(baseUrl: string): Promise<SavedAccount | undef
   const store = await readJsonStore<AccountStore>('accounts.json');
   const saved = store[new URL(baseUrl).hostname];
   const accounts = accountsFromJson(saved?.accounts);
-  if (!accounts.length) return undefined;
+  if (!accounts.length) {
+    return undefined;
+  }
   if (saved?.activeId === undefined) {
     await activateAccount(baseUrl, accounts[0].id);
     return accounts[0];

@@ -1,5 +1,5 @@
 import { get } from './han1me_http_client';
-import { type VideoDetail, type VideoTranslation } from '../../domain/models/video';
+import type { VideoDetail, VideoTranslation } from '../../domain/models/video';
 
 export async function translate(text: string, targetLanguage: string): Promise<string> {
   const query = new URLSearchParams({
@@ -10,16 +10,21 @@ export async function translate(text: string, targetLanguage: string): Promise<s
     q: text,
   });
   const response = await get(`https://translate.googleapis.com/translate_a/single?${query}`);
-  if (response.statusCode >= 400)
+  if (response.statusCode >= 400) {
     throw new Error(`Translation failed: HTTP ${response.statusCode}`);
+  }
   const segments = JSON.parse(response.body)?.[0];
-  if (!Array.isArray(segments)) throw new Error('Invalid Google Translate response');
+  if (!Array.isArray(segments)) {
+    throw new Error('Invalid Google Translate response');
+  }
   const result = segments
     .filter(Array.isArray)
     .map((segment) => segment[0])
     .filter((value) => typeof value === 'string')
     .join('');
-  if (!result) throw new Error('Empty Google Translate response');
+  if (!result) {
+    throw new Error('Empty Google Translate response');
+  }
   return result;
 }
 

@@ -4,8 +4,12 @@ const path = require('node:path');
 const os = require('node:os');
 const http = require('node:http');
 const assert = require('node:assert/strict');
-const { configureSession, registerIpc, fetchHttp, getSettings } = require('../../electron/ipc');
-const { installRequestHeaders } = require('../../electron/http');
+const { registerIpc, getSettings } = require('../../dist-electron/ipc');
+const {
+  configureUserAgent,
+  installRequestHeaders,
+  request: fetchHttp,
+} = require('../../dist-electron/http');
 app.on('window-all-closed', () => {});
 (async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'han1me-integration-'));
@@ -13,7 +17,7 @@ app.on('window-all-closed', () => {});
   let server, window;
   try {
     await app.whenReady();
-    const userAgent = configureSession();
+    const userAgent = configureUserAgent();
     assert.equal(app.userAgentFallback, userAgent);
     assert.doesNotMatch(userAgent, /Electron\/|han1me-box\//);
     assert.match(userAgent, new RegExp(`Chrome/${process.versions.chrome.replaceAll('.', '\\.')}`));
@@ -215,7 +219,7 @@ app.on('window-all-closed', () => {});
     installRequestHeaders(session.defaultSession);
     window = new BrowserWindow({
       show: false,
-      webPreferences: { preload: path.join(__dirname, '../../electron/preload.js') },
+      webPreferences: { preload: path.join(__dirname, '../../dist-electron/preload.js') },
     });
     await window.loadURL(base + '/test');
     const passed = await window.webContents.executeJavaScript(
@@ -237,7 +241,7 @@ app.on('window-all-closed', () => {});
     assert.equal(watch.continueItems.length, 6);
     assert.equal(getSettings().preferredQuality, 1080);
     console.log('PASS cookie redirect isolation, disk persistence and live settings update');
-    const comicCache = require('../../electron/comic_cache');
+    const comicCache = require('../../dist-electron/comic_cache');
     await comicCache.addCategory('Fixture');
     await comicCache.cache(
       {
@@ -258,7 +262,7 @@ app.on('window-all-closed', () => {});
     assert.deepEqual(await comicCache.entries(), []);
     await fs.rm(path.dirname(files[0]), { recursive: true, force: true });
     console.log('PASS comic download/archive/extract/categories/removal');
-    const backup = require('../../electron/backup');
+    const backup = require('../../dist-electron/backup');
     const backupPath = path.join(root, 'fixture.zip');
     dialog.showSaveDialog = async () => ({ canceled: false, filePath: backupPath });
     dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [backupPath] });

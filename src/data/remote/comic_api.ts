@@ -1,9 +1,9 @@
-import {
-  type ComicCard,
-  type ComicHome,
-  type ComicSearchResult,
-  type ComicDetail,
-  type ComicTag,
+import type {
+  ComicCard,
+  ComicHome,
+  ComicSearchResult,
+  ComicDetail,
+  ComicTag,
 } from '../../domain/models/comic';
 import { documentWithBody, text } from './han1me_api';
 import { queryClient } from '../han1me_repository';
@@ -57,8 +57,8 @@ export async function detail(id: string): Promise<ComicDetail> {
     documentWithBody(`${baseUrl}/comic/${id}`),
     documentWithBody(`${baseUrl}/comic/${id}/1`),
   ]);
-  const doc = info.document,
-    page = reader.document;
+  const doc = info.document;
+  const page = reader.document;
   const image = page.querySelector('#current-page-image');
   const count =
     Number(page.querySelector('.comic-show-content-nav')?.getAttribute('data-pages')) || 1;
@@ -125,15 +125,21 @@ export const feed = (path: string, page: number) =>
   queryOptions({
     queryKey: ['comics', 'feed', path, path ? page : 1],
     queryFn: async ({ queryKey }) => {
-      if (path) return browse(path, page);
+      if (path) {
+        return browse(path, page);
+      }
       const cached = await readComicHome();
-      if (cached) queryClient.setQueryData(queryKey, cached);
+      if (cached) {
+        queryClient.setQueryData(queryKey, cached);
+      }
       try {
         const feed = await home();
         await writeComicHome(feed);
         return feed;
       } catch (error) {
-        if (cached) return cached;
+        if (cached) {
+          return cached;
+        }
         throw error;
       }
     },

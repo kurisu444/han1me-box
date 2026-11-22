@@ -34,7 +34,7 @@ import {
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import * as api from '../../data/remote/comic_api';
 import * as store from '../../data/local/comic_store';
-import { type ComicCard, type ComicDetail } from '../../domain/models/comic';
+import type { ComicCard, ComicDetail } from '../../domain/models/comic';
 import { useQuery } from '@tanstack/react-query';
 import { LoadingState, RequestError } from '../shared/request_error';
 
@@ -110,13 +110,11 @@ export function ComicsPage({
       <Button component={Link} to="/comics/cache">
         {tr('缓存漫画')}
       </Button>
-      {(!libraryOnly || !settings.useNavigationDrawer) && (
-        <Tabs value={tab} onChange={(_, value) => setTab(value)}>
-          {!libraryOnly && <Tab value="home" label={tr('发现')} />}
-          <Tab value="watchLater" label={tr('稍后再看')} />
-          <Tab value="favorites" label={tr('收藏')} />
-        </Tabs>
-      )}
+      <Tabs value={tab} onChange={(_, value) => setTab(value)}>
+        {!libraryOnly && <Tab value="home" label={tr('发现')} />}
+        <Tab value="watchLater" label={tr('稍后再看')} />
+        <Tab value="favorites" label={tr('收藏')} />
+      </Tabs>
       {!libraryOnly && (
         <Button
           onClick={() =>
@@ -219,7 +217,9 @@ export function ComicDetailPage() {
   const [categories, setCategories] = useState<string[]>([]);
 
   async function chooseCategory() {
-    if (!(await confirmation.confirm(tr('缓存此漫画的全部图片？')))) return;
+    if (!(await confirmation.confirm(tr('缓存此漫画的全部图片？')))) {
+      return;
+    }
     setCategories(await window.electron.comics.categories());
   }
 
@@ -250,10 +250,16 @@ export function ComicDetailPage() {
 
   const comic = resource.data!;
 
-  if (resource.isPending) return <LoadingState label={tr('正在加载漫画…')} />;
-  if (resource.error) return <RequestError error={resource.error} onRetry={resource.refetch} />;
+  if (resource.isPending) {
+    return <LoadingState label={tr('正在加载漫画…')} />;
+  }
+  if (resource.error) {
+    return <RequestError error={resource.error} onRetry={resource.refetch} />;
+  }
 
-  if (reading) return <ComicReader comic={comic} onClose={() => setReading(false)} />;
+  if (reading) {
+    return <ComicReader comic={comic} onClose={() => setReading(false)} />;
+  }
 
   return (
     <Stack spacing={2}>
@@ -396,18 +402,23 @@ export function ComicReader({ comic, onClose }: { comic: ComicDetail; onClose: (
   function end(event: React.PointerEvent) {
     const start = pointer.current;
     pointer.current = undefined;
-    if (!start) return;
-    const x = event.clientX - start.x,
-      y = event.clientY - start.y;
+    if (!start) {
+      return;
+    }
+    const x = event.clientX - start.x;
+    const y = event.clientY - start.y;
     if (Math.abs(x) < 12 && Math.abs(y) < 12) {
       setControls((value) => !value);
       return;
     }
-    if (state!.mode >= 4 || (transform.current?.state.scale ?? 1) !== 1) return;
-    if (state!.mode === 3 && Math.abs(y) > Math.abs(x) && Math.abs(y) > 48)
+    if (state!.mode >= 4 || (transform.current?.state.scale ?? 1) !== 1) {
+      return;
+    }
+    if (state!.mode === 3 && Math.abs(y) > Math.abs(x) && Math.abs(y) > 48) {
       void changePage(page + (y < 0 ? 1 : -1));
-    else if (state!.mode !== 3 && Math.abs(x) > Math.abs(y) && Math.abs(x) > 48)
+    } else if (state!.mode !== 3 && Math.abs(x) > Math.abs(y) && Math.abs(x) > 48) {
       void changePage(page + ((state!.mode === 1 ? x < 0 : x > 0) ? 1 : -1));
+    }
   }
 
   function selectImage(value: ReactZoomPanPinchRef) {
@@ -424,10 +435,14 @@ export function ComicReader({ comic, onClose }: { comic: ComicDetail; onClose: (
   }
 
   function transformed(value: ReactZoomPanPinchRef) {
-    if (value.state.scale !== 1) cancelPageGesture();
+    if (value.state.scale !== 1) {
+      cancelPageGesture();
+    }
   }
 
-  if (!state) return <LoadingState label={tr('正在读取进度…')} />;
+  if (!state) {
+    return <LoadingState label={tr('正在读取进度…')} />;
+  }
 
   return (
     <Box

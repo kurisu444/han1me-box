@@ -19,7 +19,7 @@ import {
   DialogContent,
   DialogTitle,
 } from '@mui/material';
-import { useSettings, useSettingsReady } from '../../app/settings_context';
+import { useSettings } from '../../app/settings_context';
 import { resolvedBaseUrl } from '../../core/settings';
 import { previews } from '../../data/han1me_repository';
 import { useQuery } from '@tanstack/react-query';
@@ -32,10 +32,7 @@ export function PreviewsPage() {
   const [params, setParams] = useSearchParams();
   const base = useMemo(() => resolvedBaseUrl(settings), [settings]);
   const month = previewMonth(params.get('month'));
-  const { data, isPending, error, refetch } = useQuery({
-    ...previews(base, month.replace('-', '')),
-    enabled: useSettingsReady(),
-  });
+  const { data, isPending, error, refetch } = useQuery(previews(base, month.replace('-', '')));
 
   function setMonth(value: string) {
     setParams({ month: value }, { replace: true });

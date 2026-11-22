@@ -1,24 +1,24 @@
-import { KeyframesPage } from '../features/settings/keyframes_page';
-import { useI18n } from './i18n';
-import { ComicCachePage } from '../features/comics/comic_cache_page';
-import { GetchuPage, GetchuDetailPage } from '../features/previews/getchu_page';
-import { ComicsPage, ComicDetailPage } from '../features/comics/comic_pages';
-import { PreviewsPage } from '../features/previews/previews_page';
-import { StatsPage } from '../features/stats/stats_page';
-import { AboutPage, DebugLogPage } from '../features/settings/about_page';
-import { AccountPage } from '../features/account/account_page';
-import { HashRouter, Link, Route, Routes, useParams, useLocation } from 'react-router-dom';
-import { Alert, Button } from '@mui/material';
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
+import { Alert, Button } from '@mui/material';
+import { HashRouter, Link, Route, Routes, useLocation, useParams } from 'react-router-dom';
+import { AccountPage } from '../features/account/account_page';
+import { ComicCachePage } from '../features/comics/comic_cache_page';
+import { ComicDetailPage, ComicsPage } from '../features/comics/comic_pages';
 import { AppShell, mainBranches } from '../features/navigation/app_shell';
-import { VideoPage } from '../features/video/video_page';
+import { GetchuDetailPage, GetchuPage } from '../features/previews/getchu_page';
+import { PreviewsPage } from '../features/previews/previews_page';
 import { SearchPage } from '../features/search/search_page';
+import { AboutPage, DebugLogPage } from '../features/settings/about_page';
+import { KeyframesPage } from '../features/settings/keyframes_page';
+import { StatsPage } from '../features/stats/stats_page';
+import { VideoPage } from '../features/video/video_page';
+import { useI18n } from './i18n';
 
 function VideoRoute() {
   const { id } = useParams();
   const { state } = useLocation();
 
-  return <VideoPage key={id} id={id!} localVideo={state?.localVideo} />;
+  return <VideoPage key={id} id={id ?? ''} localVideo={state?.localVideo} />;
 }
 
 export function AppRouter() {
@@ -30,7 +30,7 @@ export function AppRouter() {
         <Route element={<AppShell />}>
           {/* 主分支由 AppShell 保留页面状态，其余路由正常进出 Outlet。 */}
           {mainBranches.map(({ pattern }) => (
-            <Route key={pattern} path={pattern} element={<></>} />
+            <Route key={pattern} path={pattern} element={null} />
           ))}
           <Route path="comics/cache" element={<ComicCachePage />} />
           <Route path="comics" element={<ComicsPage />} />

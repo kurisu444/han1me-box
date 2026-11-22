@@ -1,5 +1,9 @@
+import { useMemo, type ReactNode } from 'react';
+import { CssBaseline, ThemeProvider, useMediaQuery } from '@mui/material';
 import { createTheme, lighten } from '@mui/material/styles';
 import type { AppSettings } from '../core/settings';
+import { useSettings } from './settings_context';
+
 export const themeColors = {
   rose: '#b3265a',
   blue: '#00639b',
@@ -46,6 +50,28 @@ export function appTheme(
       MuiTextField: { defaultProps: { size: 'small', variant: 'outlined' } },
       MuiCard: { defaultProps: { variant: 'outlined' } },
       MuiLink: { defaultProps: { underline: 'hover' } },
+      MuiDialog: {
+        styleOverrides: {
+          root: { top: 'var(--titlebar-height)' },
+          paper: { maxHeight: 'calc(100% - 48px)' },
+        },
+      },
     },
   });
+}
+
+export function AppThemeProvider({ children }: { children: ReactNode }) {
+  const settings = useSettings();
+  const prefersDark = useMediaQuery('(prefers-color-scheme: dark)');
+  const theme = useMemo(
+    () => appTheme(settings.themeMode, settings.textScale, prefersDark, settings),
+    [settings, prefersDark],
+  );
+
+  return (
+    <ThemeProvider theme={theme}>
+      <CssBaseline enableColorScheme />
+      {children}
+    </ThemeProvider>
+  );
 }

@@ -30,8 +30,9 @@ const htmlText = (value: string) =>
 async function page(url: string) {
   await window.electron.session.importCookies(base, 'getchu_adalt_flag=getchu.com; gc=gc');
   const response = await http.get(url, { Referer: base }, 'euc-jp');
-  if (response.statusCode < 200 || response.statusCode >= 300)
+  if (response.statusCode < 200 || response.statusCode >= 300) {
     throw new Error(`Getchu request failed: HTTP ${response.statusCode}`);
+  }
   return {
     document: new DOMParser().parseFromString(response.body, 'text/html'),
     body: response.body.replaceAll('\\/', '/'),
@@ -43,7 +44,9 @@ function previewItem(product: Element): GetchuPreviewItem | undefined {
       'a[href*="/soft.phtml"], a[href*="/item/"]',
   );
   const id = getId(link?.getAttribute('href'));
-  if (!link || !id) return;
+  if (!link || !id) {
+    return;
+  }
   const titleBrand = clean(text(link));
   const image = product.querySelector('img[src*="package"]');
   const cover = absolute(image?.getAttribute('src')?.replace('package_s.', 'package.'));
@@ -60,9 +63,11 @@ function previewItem(product: Element): GetchuPreviewItem | undefined {
 function relatedItem(element: Element): GetchuPreviewItem | undefined {
   const link = element.querySelector('a[href]');
   const id = getId(link?.getAttribute('href'));
-  if (!id || !link) return;
-  const image = element.querySelector('img'),
-    cover = absolute(image?.getAttribute('src'));
+  if (!id || !link) {
+    return;
+  }
+  const image = element.querySelector('img');
+  const cover = absolute(image?.getAttribute('src'));
   return {
     id,
     title: clean(image?.getAttribute('alt')?.replaceAll('パッケージ画像', '') ?? text(link)),
@@ -91,17 +96,22 @@ export async function previews(month: string): Promise<GetchuPreviewFeed> {
   const groups: GetchuPreviewGroup[] = [];
   for (const header of document.querySelectorAll('div.category_anime_t2')) {
     let body = header.parentElement?.nextElementSibling;
-    while (body && !body.classList.contains('category_anime_b')) body = body.nextElementSibling;
-    if (!body) continue;
+    while (body && !body.classList.contains('category_anime_b')) {
+      body = body.nextElementSibling;
+    }
+    if (!body) {
+      continue;
+    }
     const items = [...body.querySelectorAll('div.div_product')]
       .map(previewItem)
       .filter((item): item is GetchuPreviewItem => !!item);
     const unique = [...new Map(items.map((item) => [item.id, item])).values()];
-    if (unique.length)
+    if (unique.length) {
       groups.push({
         releaseDate: clean(text(header).replaceAll('発売タイトル', '')),
         items: unique,
       });
+    }
   }
   return { month, groups };
 }
@@ -127,8 +137,9 @@ async function seriesItems(parentId: string): Promise<GetchuPreviewItem[]> {
       'lower_limit',
       'upper_limit',
       'add_query',
-    ])
+    ]) {
       data[key] = '';
+    }
     Object.assign(data, {
       parent_id_array: parentId,
       genre: 'anime_dvd',
@@ -148,7 +159,9 @@ async function seriesItems(parentId: string): Promise<GetchuPreviewItem[]> {
       false,
       'euc-jp',
     );
-    if (response.statusCode < 200 || response.statusCode >= 300) return [];
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      return [];
+    }
     return [
       ...new DOMParser()
         .parseFromString(response.body, 'text/html')
@@ -182,21 +195,26 @@ export async function detail(id: string): Promise<GetchuPreviewDetail> {
       const decoded = JSON.parse(value);
       const list = Array.isArray(decoded?.['@graph']) ? decoded['@graph'] : [decoded];
       product = list.find((item: Record<string, unknown>) => item?.['@type'] === 'Product');
-      if (product) break;
+      if (product) {
+        break;
+      }
     } catch {}
   }
   const specs = new Map<string, string>();
   for (const row of document.querySelectorAll('#soft_table tr')) {
     const cells = [...row.children].filter((cell) => ['TD', 'TH'].includes(cell.tagName));
-    if (cells.length >= 2)
+    if (cells.length >= 2) {
       specs.set(clean(text(cells[0])).replace(/[：:\s]+/g, ''), clean(text(cells[1])));
+    }
   }
   for (const key of ['ブランド', '定価', '発売日']) {
     const match = new RegExp(
       `<td[^>]*>\\s*${key}[:：]?\\s*</td>\\s*<td[^>]*>([\\s\\S]*?)</td>`,
       'i',
     ).exec(body);
-    if (match && !specs.has(key)) specs.set(key, htmlText(match[1]));
+    if (match && !specs.has(key)) {
+      specs.set(key, htmlText(match[1]));
+    }
   }
   const specification = (key: string) => [...specs].find(([name]) => name.includes(key))?.[1];
   const sections: GetchuPreviewSection[] = [];
@@ -227,17 +245,24 @@ export async function detail(id: string): Promise<GetchuPreviewDetail> {
           next = next.nextElementSibling;
         }
       }
-      if (found && !found.querySelector('video, source')) values.push(clean(text(found)));
+      if (found && !found.querySelector('video, source')) {
+        values.push(clean(text(found)));
+      }
     }
     const regex = new RegExp(
       `<h3[^>]*class=["'][^"']*${className}[^"']*["'][^>]*>[\\s\\S]*?</h3>\\s*` +
         `<div[^>]*class=["'][^"']*tablebody[^"']*["'][^>]*>([\\s\\S]*?)</div>`,
       'gi',
     );
-    for (const match of body.matchAll(regex))
-      if (!/<(?:video|source)\b/i.test(match[1])) values.push(htmlText(match[1]));
+    for (const match of body.matchAll(regex)) {
+      if (!/<(?:video|source)\b/i.test(match[1])) {
+        values.push(htmlText(match[1]));
+      }
+    }
     const value = values.filter(Boolean).sort((a, b) => b.length - a.length)[0];
-    if (value) sections.push({ title, body: value });
+    if (value) {
+      sections.push({ title, body: value });
+    }
   }
   const images: string[] =
     typeof product?.image === 'string'
@@ -280,15 +305,21 @@ export async function detail(id: string): Promise<GetchuPreviewDetail> {
   const videos = new Set<string>();
   function addVideo(value?: string | null) {
     const url = absolute(value?.replaceAll('&amp;', '&'));
-    if (url && /\.(mp4|m3u8)($|\?)/i.test(url)) videos.add(url);
+    if (url && /\.(mp4|m3u8)($|\?)/i.test(url)) {
+      videos.add(url);
+    }
   }
-  for (const node of document.querySelectorAll('video[src], video source[src], source[src]'))
+  for (const node of document.querySelectorAll('video[src], video source[src], source[src]')) {
     addVideo(node.getAttribute('src'));
-  for (const block of body.matchAll(/<video\b[^>]*>[\s\S]*?<\/video>|<video\b[^>]*\/?>/gi))
-    for (const source of block[0].matchAll(/(?:src|data-src)\s*=\s*["']([^"']+)["']/gi))
+  }
+  for (const block of body.matchAll(/<video\b[^>]*>[\s\S]*?<\/video>|<video\b[^>]*\/?>/gi)) {
+    for (const source of block[0].matchAll(/(?:src|data-src)\s*=\s*["']([^"']+)["']/gi)) {
       addVideo(source[1]);
-  for (const match of body.matchAll(/(?:https?:)?\/\/[^"'<>\s\\]+?\.mp4(?:\?[^"'<>\s\\]*)?/gi))
+    }
+  }
+  for (const match of body.matchAll(/(?:https?:)?\/\/[^"'<>\s\\]+?\.mp4(?:\?[^"'<>\s\\]*)?/gi)) {
     addVideo(match[0]);
+  }
   const inline = [
     ...document.querySelectorAll(
       'div.item-series-content, div[class*="item-series"], ' +

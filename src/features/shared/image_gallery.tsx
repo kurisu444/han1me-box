@@ -24,8 +24,11 @@ export function ImageGallery({ title, images }: { title: string; images: string[
   }
 
   function toggleZoom() {
-    if (transform.current?.state.scale === 1) transform.current.zoomIn(1);
-    else transform.current?.resetTransform();
+    if (transform.current?.state.scale === 1) {
+      transform.current.zoomIn(1);
+    } else {
+      transform.current?.resetTransform();
+    }
   }
 
   return (
