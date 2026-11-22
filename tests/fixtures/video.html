@@ -1,0 +1,58 @@
+<!doctype html>
+<html>
+  <head>
+    <meta property="og:title" content="Sample title - Hanime1.me" />
+    <meta property="og:video:duration" content="3723" />
+    <meta name="csrf-token" content="fixture-token" />
+  </head>
+  <body>
+    <video id="player" poster="/poster.jpg">
+      <source size="720" src="https://vdownload.hembed.com/media.mp4" type="video/mp4" />
+    </video>
+    <a id="downloadBtn" href="/download/123"></a>
+    <div>
+      <span id="video-user-avatar"></span><img src="/artist.jpg" /><span id="video-artist-name"
+        >Studio</span
+      ><a href="/search?genre=sample">Genre</a>
+    </div>
+    <form id="video-subscribe-form">
+      <input name="subscribe-artist-id" value="42" /><input name="subscribe-user-id" value="7" />
+    </form>
+    <input name="like-user-id" value="7" />
+    <div class="video-description-panel">
+      <div style="display: flex">
+        <a href="/user/7"><img src="/avatar.jpg" /><span>Uploader</span></a>
+      </div>
+      <h4>Caption title</h4>
+      <div class="hidden-xs">觀看次數：12万 2026-11-01</div>
+      <div class="video-caption-text">Sample description</div>
+    </div>
+    <div class="video-tags-wrapper">
+      <div class="single-video-tag">
+        <a href="/search?tags%5B%5D=sample">Sample (5)</a
+        ><a href="/search?tags%5B%5D=sample">Duplicate</a>
+      </div>
+      <div class="single-video-tag hidden"><a href="/search?tag=hidden">Hidden</a></div>
+      <div class="single-video-tag" data-target="#editor"><a href="#">Editor</a></div>
+    </div>
+    <span id="tab-comments-count">Comments (12)</span>
+    <div id="playlist-scroll">
+      <div class="playlist-hover-wrap" data-href="/watch?v=123">
+        <div class="title">Sample title</div>
+        <img src="/cover.jpg" />
+        <div class="stats-container"><span class="stat-item">98%</span></div>
+      </div>
+      <div class="playlist-hover-wrap" data-href="/watch?v=123"></div>
+    </div>
+    <div id="related-tabcontent">
+      <a href="/watch?v=456"
+        ><div class="related-video-margin-bottom">
+          <div class="home-rows-videos-div">
+            <img src="/related.jpg" />
+            <div class="home-rows-videos-title">Related sample</div>
+          </div>
+        </div></a
+      >
+    </div>
+  </body>
+</html>

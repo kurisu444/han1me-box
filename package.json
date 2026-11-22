@@ -1,0 +1,72 @@
+{
+  "name": "han1me-box",
+  "version": "0.1.0",
+  "description": "",
+  "main": "electron/main.js",
+  "scripts": {
+    "dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
+    "build": "vite build",
+    "dist:linux": "vite build && electron-builder --linux",
+    "dist:win": "vite build && electron-builder --win",
+    "test:unit": "node --experimental-strip-types --test tests/unit/*.test.mjs tests/unit/*.test.cjs && node tests/run-logic.cjs",
+    "test:integration": "electron tests/integration/data.cjs && electron tests/integration/downloads.cjs && electron tests/integration/app.cjs",
+    "test:login": "electron tests/integration/login.cjs",
+    "test": "npm run test:unit && npm run test:integration"
+  },
+  "build": {
+    "appId": "com.han1me.box",
+    "productName": "Han1meBox",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "assets/logo.png"
+    ],
+    "linux": {
+      "target": ["AppImage"],
+      "icon": "assets/logo.png",
+      "category": "Video"
+    },
+    "win": {
+      "target": ["nsis", "zip"],
+      "icon": "assets/logo.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  },
+  "keywords": [],
+  "author": "",
+  "license": "AGPL-3.0-only",
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^9.5.0",
+    "@mui/material": "^9.5.0",
+    "@tanstack/react-query": "^5.108.2",
+    "chrome-launcher": "^1.2.3",
+    "fflate": "^0.8.3",
+    "hls.js": "^1.7.4",
+    "puppeteer-core": "^25.18.1",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "react-router-dom": "^7.18.6",
+    "react-zoom-pan-pinch": "^4.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.3.0",
+    "concurrently": "^10.0.7",
+    "electron": "^45.4.1",
+    "electron-builder": "^26.18.0",
+    "prettier": "^3.10.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8",
+    "wait-on": "^9.5.1"
+  }
+}
