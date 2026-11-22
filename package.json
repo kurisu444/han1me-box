@@ -6,8 +6,8 @@
   "scripts": {
     "dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
     "build": "vite build",
-    "dist:linux": "vite build && electron-builder --linux",
-    "dist:win": "vite build && electron-builder --win",
+    "dist:linux": "vite build && electron-builder --linux --publish never",
+    "dist:win": "vite build && electron-builder --win --publish never",
     "test:unit": "node --experimental-strip-types --test tests/unit/*.test.mjs tests/unit/*.test.cjs && node tests/run-logic.cjs",
     "test:integration": "electron tests/integration/data.cjs && electron tests/integration/downloads.cjs && electron tests/integration/app.cjs",
     "test:login": "electron tests/integration/login.cjs",
