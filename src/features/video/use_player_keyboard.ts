@@ -1,23 +1,27 @@
 import { useEffect, type RefObject } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSettings } from '../../app/settings_context';
+import { isPlayerWindow } from './player_window';
 
 export function usePlayerKeyboard(
   player: RefObject<HTMLVideoElement | null>,
-  exitWindowFullscreen?: () => void,
+  exitWideMode?: () => void,
 ) {
   const settings = useSettings();
   const navigate = useNavigate();
   const [params] = useSearchParams();
+
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | undefined;
     let previousSpeed: number | undefined;
+
     function seek(seconds: number) {
       const video = player.current!;
       if (Number.isFinite(video.duration)) {
         video.currentTime = Math.max(0, Math.min(video.duration, video.currentTime + seconds));
       }
     }
+
     function release() {
       clearTimeout(timer);
       timer = undefined;
@@ -26,17 +30,18 @@ export function usePlayerKeyboard(
       }
       previousSpeed = undefined;
     }
+
     function down(event: KeyboardEvent) {
       const target = event.target as HTMLElement;
       if (
         target.closest(
-          'input, textarea, select, [contenteditable="true"], [role="dialog"], [role="listbox"]',
+          'input, textarea, select, [contenteditable="true"], [role="dialog"], [role="listbox"], [role="menu"]',
         )
       ) {
         return;
       }
-      if (event.key === 'Escape' && exitWindowFullscreen && !document.fullscreenElement) {
-        exitWindowFullscreen();
+      if (event.key === 'Escape' && exitWideMode && !document.fullscreenElement) {
+        exitWideMode();
         event.preventDefault();
         return;
       }
@@ -46,7 +51,7 @@ export function usePlayerKeyboard(
       }
       switch (event.key) {
         case 'ArrowLeft':
-          seek(-10);
+          seek(-settings.skipSeconds);
           break;
         case 'ArrowRight':
           if (!event.repeat && !timer && previousSpeed === undefined) {
@@ -71,11 +76,15 @@ export function usePlayerKeyboard(
           if (!event.repeat) {
             void (document.fullscreenElement
               ? document.exitFullscreen()
-              : video.parentElement!.requestFullscreen());
+              : video.closest('[data-player-stage]')?.requestFullscreen());
           }
           break;
         case 'Escape':
-          navigate(params.get('home') ?? '/');
+          if (isPlayerWindow()) {
+            void window.electron.player.focusMain();
+          } else {
+            navigate(params.get('home') ?? '/');
+          }
           break;
         case ' ':
         case 'Enter':
@@ -96,6 +105,7 @@ export function usePlayerKeyboard(
       }
       event.preventDefault();
     }
+
     function up(event: KeyboardEvent) {
       if (event.key !== 'ArrowRight') {
         return;
@@ -103,9 +113,10 @@ export function usePlayerKeyboard(
       const pending = timer !== undefined;
       release();
       if (pending) {
-        seek(10);
+        seek(settings.skipSeconds);
       }
     }
+
     window.addEventListener('keydown', down);
     window.addEventListener('keyup', up);
     window.addEventListener('blur', release);
@@ -115,5 +126,12 @@ export function usePlayerKeyboard(
       window.removeEventListener('keyup', up);
       window.removeEventListener('blur', release);
     };
-  }, [player, settings.longPressPlaybackSpeed, navigate, params, exitWindowFullscreen]);
+  }, [
+    player,
+    settings.skipSeconds,
+    settings.longPressPlaybackSpeed,
+    navigate,
+    params,
+    exitWideMode,
+  ]);
 }

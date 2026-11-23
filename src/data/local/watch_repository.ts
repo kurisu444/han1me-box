@@ -51,7 +51,12 @@ export function progress({
   });
 }
 
-export function addTime(id: string, title: string, watchedMs: number): Promise<void> {
+export function addTime(
+  id: string,
+  title: string,
+  watchedMs: number,
+  coverUrl?: string,
+): Promise<void> {
   if (watchedMs <= 0) {
     return Promise.resolve();
   }
@@ -67,6 +72,7 @@ export function addTime(id: string, title: string, watchedMs: number): Promise<v
       id: crypto.randomUUID(),
       videoCode: id,
       title,
+      coverUrl,
       watchedMs,
       date,
       createdAt: now.getTime(),

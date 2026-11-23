@@ -38,7 +38,6 @@ import {
 } from './search_controller';
 import { SearchDateDialog } from './search_date_dialog';
 import { SearchHeader } from './search_header';
-import { SearchHistorySheet } from './search_history_sheet';
 import { SearchTagDialog } from './search_tag_dialog';
 
 export function SearchPage() {
@@ -51,7 +50,6 @@ export function SearchPage() {
   const query = useMemo(() => searchRouteQuery(location.search), [location.search]);
   const historyKey = useMemo(() => searchQueryToUri(query), [query]);
   const [input, setInput] = useState(query.text);
-  const [historyOpen, setHistoryOpen] = useState(false);
   const [tagsOpen, setTagsOpen] = useState(false);
   const [dateOpen, setDateOpen] = useState(false);
   const [jumpPage, setJumpPage] = useState(String(query.page));
@@ -126,9 +124,9 @@ export function SearchPage() {
         onSubmit={submit}
         onClearInput={clearInput}
         onUpdate={update}
+        onSelectHistory={replace}
         onReset={() => replace(createSearchQuery())}
         onBack={goBack}
-        onOpenHistory={() => setHistoryOpen(true)}
         onOpenTags={() => setTagsOpen(true)}
         onOpenDate={() => setDateOpen(true)}
       />
@@ -220,13 +218,6 @@ export function SearchPage() {
             </Stack>
           </Stack>
         </>
-      )}
-      {historyOpen && (
-        <SearchHistorySheet
-          locale={locale}
-          onSelect={replace}
-          onClose={() => setHistoryOpen(false)}
-        />
       )}
       {tagsOpen && (
         <SearchTagDialog

@@ -46,7 +46,32 @@ export function appTheme(
     },
     shape: { borderRadius: 12 },
     components: {
-      MuiButton: { defaultProps: { disableElevation: true } },
+      MuiButton: {
+        defaultProps: { disableElevation: true },
+        styleOverrides: {
+          root: {
+            transition:
+              'background-color 150ms cubic-bezier(0.2, 0, 0, 1), border-color 150ms cubic-bezier(0.2, 0, 0, 1), color 150ms cubic-bezier(0.2, 0, 0, 1), transform 100ms cubic-bezier(0.2, 0, 0, 1)',
+            '&:active:not(:disabled)': { transform: 'scale(0.98)' },
+          },
+        },
+      },
+      MuiIconButton: {
+        styleOverrides: {
+          root: {
+            transition:
+              'background-color 150ms cubic-bezier(0.2, 0, 0, 1), color 150ms cubic-bezier(0.2, 0, 0, 1), transform 100ms cubic-bezier(0.2, 0, 0, 1)',
+            '&:active:not(:disabled)': { transform: 'scale(0.94)' },
+          },
+        },
+      },
+      MuiTab: {
+        styleOverrides: {
+          root: {
+            transition: 'color 150ms cubic-bezier(0.2, 0, 0, 1), opacity 150ms ease',
+          },
+        },
+      },
       MuiTextField: { defaultProps: { size: 'small', variant: 'outlined' } },
       MuiCard: { defaultProps: { variant: 'outlined' } },
       MuiLink: { defaultProps: { underline: 'hover' } },

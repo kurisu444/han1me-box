@@ -510,6 +510,18 @@ function integer(value?: string | null): number | undefined {
   return value != null && /^-?\d+$/.test(value.trim()) ? Number(value) : undefined;
 }
 
+function commentUsername(field?: Element | null): string {
+  const anchor = field?.querySelector('a');
+  if (!anchor) {
+    return '';
+  }
+  const clone = anchor.cloneNode(true) as Element;
+  for (const span of clone.querySelectorAll('span')) {
+    span.remove();
+  }
+  return text(clone) ?? '';
+}
+
 function commentFields(
   body: Element,
   post: Element,
@@ -517,7 +529,7 @@ function commentFields(
 ): Omit<Comment, 'id' | 'hasMoreReplies'> {
   const fields = body.querySelectorAll('.comment-index-text');
   return {
-    username: text(fields[0]?.querySelector('a')) ?? '',
+    username: commentUsername(fields[0]),
     content: text(fields[1]) ?? '',
     avatarUrl: absolute(baseUrl, body.querySelector('img')?.getAttribute('src')) || undefined,
     timeAgo: text(fields[0]?.querySelector('span')) || undefined,
@@ -555,14 +567,18 @@ export function parseComments(document: Document, baseUrl: string): CommentPage 
       wrapper.querySelectorAll('div.load-replies-btn'),
       (element) => element.textContent,
     ).join(' ');
+    const replyWrapperId = wrapper
+      .querySelector('div[id^="reply-section-wrapper"]')
+      ?.id.split('-')
+      .at(-1);
+    const id = replyWrapperId || `${fields.username}_${javaStringHash(fields.content)}`;
+    const hasReplyButton = wrapper.querySelector('div[class^="load-replies-btn"]') !== null;
     comments.push({
       ...fields,
-      id:
-        wrapper.querySelector('div[id^="reply-section-wrapper"]')?.id.split('-').at(-1) ??
-        `${fields.username}_${javaStringHash(fields.content)}`,
+      id,
       likeCount: text(wrapper.querySelectorAll('#comment-like-form-wrapper span[style]')[1]),
       replyCount: integer(/\d+/.exec(replyText)?.[0]),
-      hasMoreReplies: wrapper.querySelector('div[class^="load-replies-btn"]') !== null,
+      hasMoreReplies: hasReplyButton && Boolean(replyWrapperId),
     });
   }
   return {
@@ -573,10 +589,16 @@ export function parseComments(document: Document, baseUrl: string): CommentPage 
   };
 }
 
+const ajaxHeaders = {
+  'X-Requested-With': 'XMLHttpRequest',
+  Accept: 'application/json, text/javascript, */*; q=0.01',
+};
+
 export async function comments(baseUrl: string, id: string, type = 'video'): Promise<CommentPage> {
   const url = `${siteEndpointUrl(baseUrl, 'loadComment')}?${new URLSearchParams({ type, id })}`;
-  const response = await http.get(url);
-  checkResponse(response, siteEndpointUrl(baseUrl, `watch?v=${encodeURIComponent(id)}`));
+  const referer = siteEndpointUrl(baseUrl, `watch?v=${encodeURIComponent(id)}`);
+  const response = await http.get(url, { ...ajaxHeaders, Referer: referer });
+  checkResponse(response, referer);
   // 原接口可能返回 HTML，也可能返回包含 comments HTML 的 JSON。
   let body = response.body;
   try {
@@ -590,9 +612,17 @@ export async function comments(baseUrl: string, id: string, type = 'video'): Pro
 
 export async function replies(baseUrl: string, id: string): Promise<CommentPage> {
   const url = `${siteEndpointUrl(baseUrl, 'loadReplies')}?${new URLSearchParams({ id })}`;
-  const response = await http.get(url);
+  const referer = siteEndpointUrl(baseUrl, '');
+  const response = await http.get(url, { ...ajaxHeaders, Referer: referer });
   checkResponse(response, url);
-  const document = parseDocument(JSON.parse(response.body).replies ?? '');
+  let body = response.body;
+  try {
+    const decoded = JSON.parse(body);
+    if (typeof decoded?.replies === 'string') {
+      body = decoded.replies;
+    }
+  } catch {}
+  const document = parseDocument(body);
   const children = Array.from(document.querySelector('div[id^="reply-start"]')?.children ?? []);
   const comments: Comment[] = [];
   for (let index = 0; index + 1 < children.length; index += 2) {

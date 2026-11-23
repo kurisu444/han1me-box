@@ -1,21 +1,100 @@
 import { useEffect, useRef, useState } from 'react';
-import {
-  Avatar,
-  Box,
-  Button,
-  Checkbox,
-  List,
-  ListItem,
-  ListItemText,
-  Typography,
-} from '@mui/material';
-import { Link } from 'react-router-dom';
+import ChecklistIcon from '@mui/icons-material/Checklist';
+import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
+import { Box, Button, Checkbox, Stack } from '@mui/material';
 import { useI18n } from '../../app/i18n';
-import type { WatchState } from '../../data/local/watch_repository';
 import type { FollowingVideo } from '../../domain/models/library';
 import { VideoCardTile, VideoGrid } from '../shared/video_card';
 
 const VIDEO_BATCH_SIZE = 30;
+
+export function BatchManageBar({
+  managing,
+  selectedCount,
+  allSelected,
+  onToggleManaging,
+  onToggleAll,
+  onRemove,
+}: {
+  managing: boolean;
+  selectedCount: number;
+  allSelected: boolean;
+  onToggleManaging: () => void;
+  onToggleAll: () => void;
+  onRemove: () => void;
+}) {
+  const tr = useI18n();
+
+  return (
+    <Stack direction="row" spacing={1} sx={{ flexShrink: 0, alignItems: 'center' }}>
+      {managing && (
+        <>
+          <Button
+            size="small"
+            disabled={selectedCount === 0}
+            startIcon={<DeleteOutlineRoundedIcon sx={{ fontSize: 16 }} />}
+            onClick={onRemove}
+            sx={{
+              height: 32,
+              px: 1.5,
+              borderRadius: '8px',
+              fontSize: 13,
+              fontWeight: 600,
+              color: 'error.light',
+              bgcolor: 'rgba(239, 83, 80, 0.12)',
+              border: '1px solid rgba(239, 83, 80, 0.35)',
+              '&:hover': {
+                bgcolor: 'rgba(239, 83, 80, 0.22)',
+                borderColor: 'rgba(239, 83, 80, 0.55)',
+              },
+              '&.Mui-disabled': {
+                color: 'text.disabled',
+                bgcolor: 'transparent',
+                borderColor: 'divider',
+              },
+            }}
+          >
+            {tr('删除所选（')}
+            {selectedCount}）
+          </Button>
+          <Button
+            size="small"
+            color="inherit"
+            onClick={onToggleAll}
+            sx={{
+              height: 32,
+              minWidth: 76,
+              px: 1.25,
+              borderRadius: '8px',
+              fontSize: 13,
+              color: 'text.secondary',
+            }}
+          >
+            {tr(allSelected ? '取消全选' : '全选')}
+          </Button>
+        </>
+      )}
+      <Button
+        size="small"
+        color={managing ? 'primary' : 'inherit'}
+        startIcon={!managing ? <ChecklistIcon fontSize="small" /> : undefined}
+        onClick={onToggleManaging}
+        sx={{
+          height: 32,
+          px: managing ? 1.5 : 1.25,
+          borderRadius: '8px',
+          fontSize: 13,
+          fontWeight: managing ? 600 : 500,
+          color: managing ? 'primary.main' : 'text.secondary',
+          bgcolor: managing ? 'action.selected' : 'transparent',
+          '&:hover': { bgcolor: managing ? 'action.focus' : 'action.hover' },
+        }}
+      >
+        {tr(managing ? '完成' : '批量管理')}
+      </Button>
+    </Stack>
+  );
+}
 
 interface LibraryVideoGridProps {
   videos: FollowingVideo[];
@@ -99,7 +178,7 @@ export function LibraryVideoGrid({
               )}
               <VideoCardTile
                 selected={managing && isChecked}
-                onSelect={managing && itemId ? () => onToggle(itemId) : undefined}
+                onSelect={managing && selectable ? () => itemId && onToggle(itemId) : undefined}
                 video={{
                   ...video,
                   id: video.videoCode,
@@ -124,54 +203,6 @@ export function LibraryVideoGrid({
           </Button>
         </Box>
       )}
-    </>
-  );
-}
-
-interface LocalHistoryListProps {
-  history?: WatchState;
-  managing: boolean;
-  selected: string[];
-  onToggle: (id: string) => void;
-}
-
-export function LocalHistoryList({ history, managing, selected, onToggle }: LocalHistoryListProps) {
-  const tr = useI18n();
-
-  return (
-    <>
-      <Typography variant="h6">{tr('继续观看')}</Typography>
-      <List>
-        {history?.continueItems.map((item) => (
-          <ListItem
-            key={item.videoCode}
-            component={Link}
-            to={`/video/${encodeURIComponent(item.videoCode)}`}
-          >
-            <Avatar src={item.coverUrl} variant="rounded" sx={{ mr: 2 }} />
-            <ListItemText
-              primary={item.title}
-              secondary={`${Math.floor(item.positionMs / 1000)} / ${tr('{0} 秒', Math.floor(item.durationMs / 1000))}`}
-            />
-          </ListItem>
-        ))}
-      </List>
-      <Typography variant="h6">{tr('观看历史')}</Typography>
-      <List>
-        {[...(history?.histories ?? [])].reverse().map((item) => (
-          <ListItem key={item.id}>
-            {managing && (
-              <Checkbox checked={selected.includes(item.id)} onChange={() => onToggle(item.id)} />
-            )}
-            <ListItemText
-              primary={
-                <Link to={`/video/${encodeURIComponent(item.videoCode)}`}>{item.title}</Link>
-              }
-              secondary={tr('{0} · {1} 秒', item.date, Math.round(item.watchedMs / 1000))}
-            />
-          </ListItem>
-        ))}
-      </List>
     </>
   );
 }

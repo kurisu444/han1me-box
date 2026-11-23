@@ -1,10 +1,7 @@
 import { useState, type SyntheticEvent } from 'react';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import ClearIcon from '@mui/icons-material/Clear';
-import HistoryIcon from '@mui/icons-material/History';
 import LabelOutlinedIcon from '@mui/icons-material/LabelOutlined';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
-import SearchIcon from '@mui/icons-material/Search';
 import TuneIcon from '@mui/icons-material/Tune';
 import {
   Box,
@@ -12,7 +9,6 @@ import {
   Chip,
   Collapse,
   IconButton,
-  InputBase,
   MenuItem,
   Stack,
   TextField,
@@ -27,6 +23,7 @@ import {
   searchOptionCatalog,
 } from '../../data/search_option_catalog';
 import type { SearchQuery } from '../../domain/models/search_query';
+import { SearchBarBox } from './search_bar_box';
 
 interface SearchHeaderProps {
   query: SearchQuery;
@@ -36,9 +33,9 @@ interface SearchHeaderProps {
   onSubmit: (event: SyntheticEvent) => void;
   onClearInput: () => void;
   onUpdate: (values: Partial<SearchQuery>) => void;
+  onSelectHistory: (query: SearchQuery) => void;
   onReset: () => void;
   onBack: () => void;
-  onOpenHistory: () => void;
   onOpenTags: () => void;
   onOpenDate: () => void;
 }
@@ -51,9 +48,9 @@ export function SearchHeader({
   onSubmit,
   onClearInput,
   onUpdate,
+  onSelectHistory,
   onReset,
   onBack,
-  onOpenHistory,
   onOpenTags,
   onOpenDate,
 }: SearchHeaderProps) {
@@ -78,47 +75,18 @@ export function SearchHeader({
           </IconButton>
         </Tooltip>
         <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center' }}>
-          <Box
-            component="form"
-            onSubmit={onSubmit}
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              width: '100%',
-              maxWidth: 520,
-              pl: 2.25,
-              pr: 0.75,
-              height: 42,
-              borderRadius: '999px',
-              bgcolor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)',
-              '&:focus-within': {
-                outline: '1.5px solid',
-                outlineColor: 'primary.main',
-              },
-            }}
-          >
-            <InputBase
+          <Box sx={{ width: '100%', maxWidth: 520 }}>
+            <SearchBarBox
               value={input}
-              onChange={(event) => onInputChange(event.target.value)}
-              placeholder={tr('搜索视频、作者、标签…')}
-              inputProps={{ 'aria-label': tr('搜索关键词') }}
-              sx={{ flexGrow: 1, fontSize: 14 }}
+              locale={locale}
+              onChange={onInputChange}
+              onClear={onClearInput}
+              onSubmit={onSubmit}
+              onSelectHistory={onSelectHistory}
             />
-            {input && (
-              <IconButton size="small" aria-label={tr('清除搜索关键词')} onClick={onClearInput}>
-                <ClearIcon fontSize="small" />
-              </IconButton>
-            )}
-            <IconButton type="submit" size="small" aria-label={tr('搜索')}>
-              <SearchIcon fontSize="small" />
-            </IconButton>
           </Box>
         </Box>
-        <Tooltip title={tr('搜索历史')}>
-          <IconButton onClick={onOpenHistory} aria-label={tr('搜索历史')}>
-            <HistoryIcon />
-          </IconButton>
-        </Tooltip>
+        <Box sx={{ width: 40, flexShrink: 0 }} />
       </Box>
 
       <Stack

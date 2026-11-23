@@ -1,54 +1,59 @@
-import { useI18n } from '../../app/i18n';
-import { VideoActions } from './video_actions';
-import { useAccount } from '../account/account_controller';
-import { addSubscriptionVideo } from '../../data/local/library_repository';
-import { useMemo, useEffect, useState, type SyntheticEvent } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Alert, Box, Button, Stack, Tab, Tabs, Typography } from '@mui/material';
+import { useEffect, useMemo, useState, type SyntheticEvent } from 'react';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import { Alert, Box, IconButton, Stack, Tab, Tabs, Tooltip } from '@mui/material';
+import { useQuery } from '@tanstack/react-query';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useI18n } from '../../app/i18n';
 import { useSettings } from '../../app/settings_context';
 import { resolvedBaseUrl } from '../../core/settings';
 import * as repository from '../../data/han1me_repository';
-import type { VideoDetail } from '../../domain/models/video';
-import { RequestError, LoadingState } from '../shared/request_error';
-import { CompactVideoCard } from '../shared/video_card';
-import { useQuery } from '@tanstack/react-query';
-import { VideoDetailContent } from './video_detail_content';
+import { addSubscriptionVideo } from '../../data/local/library_repository';
+import { localMediaUrl } from '../../domain/models/download';
+import type { PlaylistQueue, VideoDetail } from '../../domain/models/video';
+import { useAccount } from '../account/account_controller';
+import { LoadingState, RequestError } from '../shared/request_error';
+import { usePlayerChrome } from './player_window';
 import { VideoComments } from './video_comments';
-import { VideoPlayerPanel } from './video_player_panel';
+import { VideoDetailContent } from './video_detail_content';
 import { nextEpisode, relatedVideoVisible } from './video_helpers';
+import { VideoPlayerPanel } from './video_player_panel';
 
 export function VideoDetailView({
   video,
+  queue,
+  offlineNotice = false,
   onRefresh,
 }: {
   video: VideoDetail;
+  queue?: PlaylistQueue;
+  offlineNotice?: boolean;
   onRefresh?: () => void;
 }) {
   const tr = useI18n();
   const settings = useSettings();
   const navigate = useNavigate();
   const [params] = useSearchParams();
+  const { sidebarOpen, toggleSidebar, setVideoTitle } = usePlayerChrome();
   const [translatedTitle, setTranslatedTitle] = useState<string>();
   const [commentsVisited, setCommentsVisited] = useState(false);
   const [tab, setTab] = useState<'details' | 'comments'>('details');
+
   useEffect(() => {
     void addSubscriptionVideo(video);
   }, [video]);
+
+  useEffect(() => {
+    setVideoTitle(translatedTitle ?? video.title);
+    return () => setVideoTitle('');
+  }, [translatedTitle, video.title, setVideoTitle]);
 
   const activeTab = settings.commentsEnabled ? tab : 'details';
   const next = nextEpisode(video);
   const related = settings.applyRecommendationFiltersToRelated
     ? video.related.filter((item) => relatedVideoVisible(item, settings))
     : video.related;
-  const metadata = [
-    video.views && tr('{0} 次观看', video.views),
-    video.uploadDate,
-    video.genre,
-    video.duration,
-  ]
-    .filter(Boolean)
-    .join(' · ');
 
   function playNext() {
     switchEpisode(next!.id);
@@ -60,7 +65,9 @@ export function VideoDetailView({
     }
     const home = params.get('home');
     const query = home ? `?${new URLSearchParams({ home })}` : '';
-    navigate(`/video/${encodeURIComponent(id)}${query}`, { replace: true });
+    navigate(`/video/${encodeURIComponent(id)}${query}`, {
+      state: queue ? { queue } : undefined,
+    });
   }
 
   function changeTab(_event: SyntheticEvent, value: 'details' | 'comments') {
@@ -72,150 +79,204 @@ export function VideoDetailView({
 
   return (
     <Box
+      component="main"
       sx={{
-        display: 'grid',
-        gridTemplateColumns: 'minmax(0, 1fr) 310px',
-        gap: '30px',
-        alignItems: 'start',
-        '@media (max-width:1000px)': { gridTemplateColumns: 'minmax(0, 1fr)' },
+        display: 'flex',
+        height: 'calc(100vh - var(--titlebar-height))',
+        width: '100%',
+        overflow: 'hidden',
+        bgcolor: 'background.default',
+        '@media (max-width:860px)': {
+          flexDirection: 'column',
+        },
       }}
     >
       <Box
         sx={{
+          flex: 1,
           minWidth: 0,
+          minHeight: 0,
+          height: '100%',
+          bgcolor: '#000',
+          position: 'relative',
+          '@media (max-width:860px)': {
+            flex: sidebarOpen ? 'none' : 1,
+            height: sidebarOpen ? '48vh' : '100%',
+          },
         }}
       >
         <VideoPlayerPanel video={video} onNext={next ? playNext : undefined} />
-        <Box
-          sx={{
-            py: 3,
-          }}
-        >
-          <Typography
-            component="h1"
-            variant="h5"
+        <Tooltip title={tr(sidebarOpen ? '收起信息栏' : '展开信息栏')} placement="left">
+          <IconButton
+            aria-label={tr(sidebarOpen ? '收起信息栏' : '展开信息栏')}
+            aria-expanded={sidebarOpen}
+            aria-controls="video-sidebar"
+            onClick={toggleSidebar}
             sx={{
-              mb: 1,
-              overflowWrap: 'anywhere',
+              position: 'absolute',
+              right: 0,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              zIndex: 3,
+              width: 28,
+              height: 64,
+              borderRadius: '8px 0 0 8px',
+              bgcolor: 'rgba(0, 0, 0, 0.45)',
+              color: '#fff',
+              '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.7)' },
+              '@media (max-width:860px)': sidebarOpen
+                ? {
+                    top: 'auto',
+                    bottom: 0,
+                    right: '50%',
+                    transform: 'translateX(50%)',
+                    width: 64,
+                    height: 28,
+                    borderRadius: '8px 8px 0 0',
+                    '& svg': { transform: 'rotate(90deg)' },
+                  }
+                : {},
             }}
           >
-            {translatedTitle ?? video.title}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {metadata}
-          </Typography>
-        </Box>
-        <VideoActions video={video} />
-        <Tabs
-          value={activeTab}
-          onChange={changeTab}
-          aria-label={tr('视频信息')}
-          sx={{
-            borderBottom: 1,
-            borderColor: 'divider',
-            mb: 2,
-          }}
-        >
-          <Tab id="details-tab" value="details" label={tr('简介')} aria-controls="video-info" />
-          {settings.commentsEnabled && (
-            <Tab
-              id="comments-tab"
-              value="comments"
-              label={tr(
-                '评论{0}',
-                video.commentCount !== undefined ? `（${video.commentCount}）` : '',
-              )}
-              aria-controls="video-info"
-            />
-          )}
-        </Tabs>
-        <Box id="video-info" role="tabpanel" aria-labelledby={`${activeTab}-tab`}>
-          <Box hidden={activeTab !== 'details'}>
-            <VideoDetailContent
-              video={video}
-              onRefresh={onRefresh}
-              onTitleChanged={setTranslatedTitle}
-            />
-          </Box>
-          {commentsVisited && (
-            <Box hidden={activeTab !== 'comments'}>
-              <VideoComments key={video.id} video={video} />
-            </Box>
-          )}
-        </Box>
+            {sidebarOpen ? <ChevronRightIcon /> : <ChevronLeftIcon />}
+          </IconButton>
+        </Tooltip>
       </Box>
-      <Box
-        component="aside"
-        sx={{
-          display: 'grid',
-          gap: '28px',
-          minWidth: 0,
-          '@media (max-width:1000px)': { gridTemplateColumns: '1fr 1fr' },
-          '@media (max-width:620px)': { gridTemplateColumns: 'minmax(0, 1fr)' },
-        }}
-      >
-        {video.playlist.length > 0 && (
-          <Box component="section">
-            <Stack
-              direction="row"
-              sx={{
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                mb: 2,
-              }}
-            >
-              <Typography component="h2" variant="h6">
-                {tr('剧集')}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {video.playlist.length}
-                {tr('集')}
-              </Typography>
-            </Stack>
-            <Stack
-              spacing={1}
-              sx={{
-                maxHeight: 480,
-                overflowY: 'auto',
-                p: 0.5,
-              }}
-            >
-              {video.playlist.map((item, index) => (
-                <CompactVideoCard
-                  key={`${item.id}-${index}`}
-                  video={item}
-                  selected={item.id === video.id}
-                  onSelect={() => switchEpisode(item.id)}
-                />
-              ))}
-            </Stack>
-          </Box>
-        )}
-        <Box component="section">
-          <Typography
-            component="h2"
-            variant="h6"
+      {sidebarOpen && (
+        <Box
+          component="aside"
+          id="video-sidebar"
+          sx={{
+            width: 360,
+            flexShrink: 0,
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            bgcolor: 'background.paper',
+            borderLeft: 1,
+            borderColor: 'divider',
+            minHeight: 0,
+            '@media (max-width:860px)': {
+              width: '100%',
+              flex: 1,
+              height: 'auto',
+              borderLeft: 0,
+              borderTop: 1,
+            },
+          }}
+        >
+          <Stack
+            direction="row"
             sx={{
-              mb: 2,
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              px: 1.5,
+              borderBottom: 1,
+              borderColor: 'divider',
+              flexShrink: 0,
             }}
           >
-            {tr('相关推荐')}
-          </Typography>
-          <Stack spacing={1}>
-            {related.length ? (
-              related.map((item, index) => (
-                <CompactVideoCard key={`${item.id}-${index}`} video={item} />
-              ))
-            ) : (
-              <Typography color="text.secondary">{tr('暂无相关推荐。')}</Typography>
+            <Tabs
+              value={activeTab}
+              onChange={changeTab}
+              aria-label={tr('视频信息')}
+              sx={{
+                minHeight: 44,
+                '& .MuiTab-root': {
+                  minHeight: 44,
+                  minWidth: 64,
+                  px: 1.5,
+                  py: 0.75,
+                  fontSize: 13.5,
+                },
+              }}
+            >
+              <Tab id="details-tab" value="details" label={tr('简介')} aria-controls="video-info" />
+              {settings.commentsEnabled && (
+                <Tab
+                  id="comments-tab"
+                  value="comments"
+                  aria-controls="video-info"
+                  label={
+                    <Stack direction="row" spacing={0.75} sx={{ alignItems: 'center' }}>
+                      <span>{tr('评论')}</span>
+                      {video.commentCount !== undefined && (
+                        <Box
+                          component="span"
+                          sx={{
+                            px: 0.75,
+                            py: 0.1,
+                            borderRadius: 999,
+                            fontSize: 11,
+                            fontWeight: 700,
+                            lineHeight: 1.4,
+                            bgcolor: 'primary.main',
+                            color: 'primary.contrastText',
+                          }}
+                        >
+                          {video.commentCount}
+                        </Box>
+                      )}
+                    </Stack>
+                  }
+                />
+              )}
+            </Tabs>
+            {onRefresh && (
+              <Tooltip title={tr('刷新详情')}>
+                <IconButton size="small" aria-label={tr('刷新详情')} onClick={onRefresh}>
+                  <RefreshIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
             )}
           </Stack>
+          <Box
+            id="video-info"
+            role="tabpanel"
+            aria-labelledby={`${activeTab}-tab`}
+            sx={{
+              flex: 1,
+              minHeight: 0,
+              overflowY: 'auto',
+              px: 2,
+              py: 2,
+            }}
+          >
+            <Box hidden={activeTab !== 'details'}>
+              {offlineNotice && (
+                <Alert severity="info" sx={{ mb: 2 }}>
+                  {tr('无法获取在线资料，正在使用离线视频信息')}
+                </Alert>
+              )}
+              <VideoDetailContent
+                video={video}
+                related={related}
+                playlistTitle={queue?.title}
+                onSelectEpisode={switchEpisode}
+                onTitleChanged={setTranslatedTitle}
+              />
+            </Box>
+            {commentsVisited && (
+              <Box hidden={activeTab !== 'comments'}>
+                <VideoComments key={video.id} video={video} />
+              </Box>
+            )}
+          </Box>
         </Box>
-      </Box>
+      )}
     </Box>
   );
 }
-export function VideoPage({ id, localVideo }: { id: string; localVideo?: VideoDetail }) {
+
+export function VideoPage({
+  id,
+  localVideo,
+  queue,
+}: {
+  id: string;
+  localVideo?: VideoDetail;
+  queue?: PlaylistQueue;
+}) {
   const tr = useI18n();
   const settings = useSettings();
   const { ready } = useAccount();
@@ -224,33 +285,80 @@ export function VideoPage({ id, localVideo }: { id: string; localVideo?: VideoDe
     ...repository.video(baseUrl, id),
     enabled: ready !== false,
   });
+  const cachedSource = useQuery({
+    queryKey: ['cached-video-source', id],
+    enabled: !localVideo && Boolean(id),
+    queryFn: async () => {
+      const state = await window.electron.downloads.state();
+      const task = state.tasks.find(
+        (item) => item.videoCode === id && item.status === 'completed' && item.localVideoPath,
+      );
+      if (!task?.localVideoPath || !(await window.electron.fileExists(task.localVideoPath))) {
+        return null;
+      }
+      return { quality: task.quality, url: localMediaUrl(task.localVideoPath) };
+    },
+  });
 
-  const detail = localVideo ? (data ? { ...data, sources: localVideo.sources } : localVideo) : data;
+  const mergedOnline =
+    data && cachedSource.data
+      ? {
+          ...data,
+          sources: [
+            {
+              quality: `${cachedSource.data.quality} · ${tr('已缓存')}`,
+              url: cachedSource.data.url,
+            },
+            ...data.sources,
+          ],
+        }
+      : data;
+  const baseDetail = localVideo
+    ? data
+      ? { ...data, sources: localVideo.sources }
+      : localVideo
+    : mergedOnline;
+  const detail =
+    baseDetail && queue?.items.length ? { ...baseDetail, playlist: queue.items } : baseDetail;
 
-  if (!localVideo && isPending) {
-    return <LoadingState label={tr('正在加载视频…')} />;
+  if (!localVideo && (isPending || cachedSource.isPending)) {
+    return (
+      <Box
+        sx={{
+          height: 'calc(100vh - var(--titlebar-height))',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <LoadingState label={tr('正在加载视频…')} />
+      </Box>
+    );
   }
+
   if (!localVideo && error) {
-    return <RequestError error={error} onRetry={refetch} />;
+    return (
+      <Box
+        sx={{
+          height: 'calc(100vh - var(--titlebar-height))',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          p: 3,
+        }}
+      >
+        <RequestError error={error} onRetry={refetch} />
+      </Box>
+    );
   }
 
   return (
-    <>
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'flex-end',
-          mb: 1,
-        }}
-      >
-        <Button onClick={() => refetch()} disabled={ready === false} startIcon={<RefreshIcon />}>
-          {tr('刷新详情')}
-        </Button>
-      </Box>
-      {localVideo && error && (
-        <Alert severity="info">{tr('无法获取在线资料，正在使用离线视频信息')}</Alert>
-      )}
-      <VideoDetailView key={detail!.id} video={detail!} onRefresh={refetch} />
-    </>
+    <VideoDetailView
+      key={detail!.id}
+      video={detail!}
+      queue={queue}
+      offlineNotice={Boolean(localVideo && error)}
+      onRefresh={() => void refetch()}
+    />
   );
 }

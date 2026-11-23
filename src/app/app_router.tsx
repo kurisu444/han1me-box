@@ -4,6 +4,7 @@ import { HashRouter, Link, Route, Routes, useLocation, useParams } from 'react-r
 import { AccountPage } from '../features/account/account_page';
 import { ComicCachePage } from '../features/comics/comic_cache_page';
 import { ComicDetailPage, ComicsPage } from '../features/comics/comic_pages';
+import { PlaylistDetailPage } from '../features/library/playlist_page';
 import { AppShell, mainBranches } from '../features/navigation/app_shell';
 import { GetchuDetailPage, GetchuPage } from '../features/previews/getchu_page';
 import { PreviewsPage } from '../features/previews/previews_page';
@@ -11,6 +12,7 @@ import { SearchPage } from '../features/search/search_page';
 import { AboutPage, DebugLogPage } from '../features/settings/about_page';
 import { KeyframesPage } from '../features/settings/keyframes_page';
 import { StatsPage } from '../features/stats/stats_page';
+import { MainWindowPlayerBridge } from '../features/video/player_window';
 import { VideoPage } from '../features/video/video_page';
 import { useI18n } from './i18n';
 
@@ -26,12 +28,15 @@ export function AppRouter() {
 
   return (
     <HashRouter>
+      <MainWindowPlayerBridge />
       <Routes>
+        <Route path="video/:id" element={<VideoRoute />} />
         <Route element={<AppShell />}>
           {/* 主分支由 AppShell 保留页面状态，其余路由正常进出 Outlet。 */}
           {mainBranches.map(({ pattern }) => (
             <Route key={pattern} path={pattern} element={null} />
           ))}
+          <Route path="library/playlist/:id" element={<PlaylistDetailPage />} />
           <Route path="comics/cache" element={<ComicCachePage />} />
           <Route path="comics" element={<ComicsPage />} />
           <Route path="comics/:id" element={<ComicDetailPage />} />
@@ -44,7 +49,6 @@ export function AppRouter() {
           <Route path="settings/logs" element={<DebugLogPage />} />
           <Route path="account" element={<AccountPage />} />
           <Route path="search" element={<SearchPage />} />
-          <Route path="video/:id" element={<VideoRoute />} />
           <Route
             path="*"
             element={

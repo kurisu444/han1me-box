@@ -42,6 +42,7 @@ export interface WatchHistory {
   id: string;
   videoCode: string;
   title: string;
+  coverUrl?: string;
   watchedMs: number;
   date: string;
   createdAt: number;
@@ -135,6 +136,7 @@ export function watchHistoryFromJson(value: Partial<WatchHistory>): WatchHistory
     id: value.id ?? '',
     videoCode: value.videoCode ?? '',
     title: value.title ?? '',
+    coverUrl: value.coverUrl,
     watchedMs: value.watchedMs ?? 0,
     date: value.date ?? '',
     createdAt: value.createdAt ?? 0,

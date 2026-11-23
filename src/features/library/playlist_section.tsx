@@ -1,46 +1,177 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import PlaylistPlayRoundedIcon from '@mui/icons-material/PlaylistPlayRounded';
+import ShareOutlinedIcon from '@mui/icons-material/ShareOutlined';
 import {
   Box,
   Button,
-  Card,
-  CardActionArea,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
+  IconButton,
+  ListItemIcon,
+  ListItemText,
+  Menu,
   MenuItem,
   Stack,
   TextField,
   Typography,
 } from '@mui/material';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useI18n } from '../../app/i18n';
 import * as library from '../../data/local/library_repository';
 import * as api from '../../data/remote/account_api';
 import type { Account } from '../../domain/models/account';
-import type { FollowingVideo, Playlist, PlaylistSortOrder } from '../../domain/models/library';
-import { LoadingState, RequestError } from '../shared/request_error';
-import { cardGridSx, VideoCover } from '../shared/video_card';
+import type { Playlist } from '../../domain/models/library';
+import { NoticeToast, type NoticeMessage } from '../shared/notice_toast';
+import { VideoCover, VideoGrid } from '../shared/video_card';
 
-interface PlaylistSectionProps {
+export async function savePlaylistEntry({
+  base,
+  account,
+  libraryToken,
+  targetId,
+  title,
+  description,
+  onReloadRemote,
+}: {
   base: string;
   account?: Account;
   libraryToken?: string;
-  playlists: Playlist[];
-  playlist?: Playlist;
-  playlistId: string;
-  playlistDescription?: string;
-  remoteAuthor?: string;
-  remoteViewCount?: number;
-  remotePending: boolean;
-  remoteError: Error | null;
-  onRetryRemote: () => void;
-  remoteSort: string;
-  onChangeSort: (value: string) => void;
-  videos: FollowingVideo[];
-  onOpenPlaylist: (id: string) => void;
+  targetId?: string;
+  title: string;
+  description: string;
   onReloadRemote: () => void;
-  confirm: (message: string) => Promise<boolean>;
+}) {
+  if (account) {
+    const token = targetId ? (account.csrfToken ?? libraryToken) : libraryToken;
+    if (!token) {
+      return;
+    }
+    if (targetId) {
+      await api.updatePlaylist(base, token, targetId, title, description);
+    } else {
+      await api.createPlaylist(base, token, '', title, description);
+    }
+    onReloadRemote();
+  } else if (targetId) {
+    await library.updatePlaylist(targetId, title, description);
+  } else {
+    await library.createPlaylist(title, description);
+  }
+}
+
+export async function deletePlaylistEntry({
+  base,
+  account,
+  libraryToken,
+  targetId,
+  onReloadRemote,
+}: {
+  base: string;
+  account?: Account;
+  libraryToken?: string;
+  targetId: string;
+  onReloadRemote: () => void;
+}) {
+  if (account) {
+    const token = account.csrfToken ?? libraryToken;
+    if (!token) {
+      return;
+    }
+    await api.deletePlaylist(base, token, targetId);
+    onReloadRemote();
+  } else {
+    await library.deletePlaylist(targetId);
+  }
+}
+
+export function PlaylistCover({
+  coverUrl,
+  count,
+  title,
+}: {
+  coverUrl?: string;
+  count: number;
+  title: string;
+}) {
+  if (count === 0 || !coverUrl) {
+    return (
+      <Stack
+        sx={{
+          width: '100%',
+          height: '100%',
+          alignItems: 'center',
+          justifyContent: 'center',
+          bgcolor: 'action.hover',
+          color: 'text.disabled',
+        }}
+      >
+        <PlaylistPlayRoundedIcon sx={{ fontSize: 40 }} />
+      </Stack>
+    );
+  }
+  return <VideoCover key={coverUrl} url={coverUrl} title={title} />;
+}
+
+export function PlaylistEditorDialog({
+  open,
+  isEdit,
+  initialTitle,
+  initialDescription,
+  onClose,
+  onSave,
+}: {
+  open: boolean;
+  isEdit: boolean;
+  initialTitle: string;
+  initialDescription: string;
+  onClose: () => void;
+  onSave: (title: string, description: string) => Promise<void>;
+}) {
+  const tr = useI18n();
+  const [title, setTitle] = useState(initialTitle);
+  const [description, setDescription] = useState(initialDescription);
+
+  useEffect(() => {
+    if (open) {
+      setTitle(initialTitle);
+      setDescription(initialDescription);
+    }
+  }, [open, initialTitle, initialDescription]);
+
+  return (
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs">
+      <DialogTitle>{isEdit ? tr('编辑片单') : tr('新建片单')}</DialogTitle>
+      <DialogContent>
+        <Stack spacing={2} sx={{ pt: 1 }}>
+          <TextField
+            label={tr('名称')}
+            value={title}
+            onChange={(event) => setTitle(event.target.value)}
+          />
+          <TextField
+            label={tr('简介')}
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
+          />
+        </Stack>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>{tr('取消')}</Button>
+        <Button
+          variant="contained"
+          disabled={!title.trim()}
+          onClick={() => void onSave(title.trim(), description.trim())}
+        >
+          {tr('保存')}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
 }
 
 export function PlaylistSection({
@@ -48,215 +179,200 @@ export function PlaylistSection({
   account,
   libraryToken,
   playlists,
-  playlist,
-  playlistId,
-  playlistDescription,
-  remoteAuthor,
-  remoteViewCount,
-  remotePending,
-  remoteError,
-  onRetryRemote,
-  remoteSort,
-  onChangeSort,
-  videos,
-  onOpenPlaylist,
   onReloadRemote,
   confirm,
-}: PlaylistSectionProps) {
+  createOpen = false,
+  onCloseCreate,
+}: {
+  base: string;
+  account?: Account;
+  libraryToken?: string;
+  playlists: Playlist[];
+  onReloadRemote: () => void;
+  confirm: (message: string) => Promise<boolean>;
+  createOpen?: boolean;
+  onCloseCreate?: () => void;
+}) {
   const tr = useI18n();
-  const [editing, setEditing] = useState(false);
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
+  const navigate = useNavigate();
+  const [editingTarget, setEditingTarget] = useState<Playlist | 'new' | null>(null);
+  const [menu, setMenu] = useState<{ anchor: HTMLElement; item: Playlist } | null>(null);
+  const [notice, setNotice] = useState<NoticeMessage | null>(null);
 
-  function openEditor() {
-    setTitle(playlist?.title ?? '');
-    setDescription(playlistDescription ?? '');
-    setEditing(true);
-  }
+  useEffect(() => {
+    if (createOpen) {
+      setEditingTarget('new');
+      onCloseCreate?.();
+    }
+  }, [createOpen, onCloseCreate]);
 
-  async function savePlaylist() {
-    if (!title.trim()) {
+  async function handleSave(title: string, description: string) {
+    if (!editingTarget) {
       return;
     }
-    if (account) {
-      const token = playlist ? account.csrfToken : libraryToken;
-      if (!token) {
-        return;
-      }
-      if (playlist) {
-        await api.updatePlaylist(base, token, playlist.id, title.trim(), description.trim());
-      } else {
-        await api.createPlaylist(base, token, '', title.trim(), description.trim());
-      }
-      onReloadRemote();
-    } else if (playlist) {
-      await library.updatePlaylist(playlist.id, title, description);
-    } else {
-      await library.createPlaylist(title.trim(), description.trim());
-    }
-    setEditing(false);
+    await savePlaylistEntry({
+      base,
+      account,
+      libraryToken,
+      targetId: editingTarget === 'new' ? undefined : editingTarget.id,
+      title,
+      description,
+      onReloadRemote,
+    });
+    setEditingTarget(null);
   }
 
-  async function deletePlaylist() {
+  async function handleDelete(targetId: string) {
+    setMenu(null);
     if (!(await confirm(tr('删除此片单？')))) {
       return;
     }
-    if (account) {
-      if (!account.csrfToken) {
-        return;
-      }
-      await api.deletePlaylist(base, account.csrfToken, playlistId);
-      onReloadRemote();
-    } else {
-      await library.deletePlaylist(playlistId);
-    }
-    onOpenPlaylist('');
+    await deletePlaylistEntry({ base, account, libraryToken, targetId, onReloadRemote });
   }
 
-  async function sharePlaylist() {
-    const url = `${base}/playlist?list=${playlistId}`;
-    if (navigator.share) {
-      await navigator.share({ title: playlist?.title, url });
-    } else {
-      await navigator.clipboard.writeText(url);
-    }
+  async function handleShare(target: Playlist) {
+    setMenu(null);
+    await navigator.clipboard.writeText(`${base}/playlist?list=${encodeURIComponent(target.id)}`);
+    setNotice({ id: Date.now(), text: tr('已复制') });
   }
 
-  function changeSort(value: string) {
-    if (account) {
-      onChangeSort(value);
-    } else {
-      void library.setPlaylistSort(playlistId, value as PlaylistSortOrder);
-    }
-  }
+  const openPlaylist = (id: string) => navigate(`/library/playlist/${encodeURIComponent(id)}`);
+  const editingItem = editingTarget && editingTarget !== 'new' ? editingTarget : undefined;
 
   return (
     <>
-      <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap', alignItems: 'center' }}>
-        {playlist && (
-          <Button size="small" onClick={() => onOpenPlaylist('')}>
-            {tr('返回片单列表')}
-          </Button>
-        )}
-        <Button size="small" variant="outlined" onClick={openEditor}>
-          {playlist ? tr('编辑片单') : tr('新建片单')}
-        </Button>
-        {playlist && (
-          <Button size="small" color="error" onClick={deletePlaylist}>
-            {tr('删除片单')}
-          </Button>
-        )}
-        {playlist && (
-          <TextField
-            select
-            label={tr('排序')}
-            size="small"
-            value={account ? remoteSort : playlist.sort}
-            onChange={(event) => changeSort(event.target.value)}
-            sx={{ minWidth: 120 }}
+      <VideoGrid>
+        {playlists.map((item) => (
+          <Box
+            key={item.id}
+            component="article"
+            sx={{
+              minWidth: 0,
+              '&:hover .playlist-cover img': { transform: 'scale(1.03)' },
+              '&:hover .playlist-title': { color: 'primary.main' },
+            }}
           >
-            {(account
-              ? [
-                  ['latest', tr('最新')],
-                  ['popular', tr('热门')],
-                  ['oldest', tr('最早')],
-                ]
-              : [
-                  ['recentlyAdded', tr('最近添加')],
-                  ['oldestAdded', tr('最早添加')],
-                  ['title', tr('标题')],
-                ]
-            ).map(([value, label]) => (
-              <MenuItem key={value} value={value}>
-                {label}
-              </MenuItem>
-            ))}
-          </TextField>
-        )}
-      </Stack>
-
-      {!playlist && (
-        <Box sx={cardGridSx}>
-          {playlists.map((item) => (
-            <Card key={item.id}>
-              <CardActionArea onClick={() => onOpenPlaylist(item.id)} sx={{ p: 2 }}>
-                <Box sx={{ aspectRatio: '16/9', borderRadius: '8px', overflow: 'hidden', mb: 1 }}>
-                  <VideoCover url={item.coverUrl ?? ''} title={item.title} />
-                </Box>
-                <Typography variant="subtitle1" sx={{ fontWeight: 600 }} noWrap>
-                  {item.title}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  {item.count}
-                  {tr('个视频')}
-                </Typography>
-              </CardActionArea>
-            </Card>
-          ))}
-        </Box>
-      )}
-
-      {playlist && (
-        <Stack spacing={1}>
-          {playlist.coverUrl && (
             <Box
-              sx={{ maxWidth: 600, aspectRatio: '16/9', borderRadius: '10px', overflow: 'hidden' }}
+              onClick={() => openPlaylist(item.id)}
+              sx={{ cursor: 'pointer', userSelect: 'none' }}
             >
-              <VideoCover url={playlist.coverUrl} title={playlist.title} />
+              <Box
+                className="playlist-cover"
+                sx={{
+                  position: 'relative',
+                  aspectRatio: '16 / 9',
+                  borderRadius: '10px',
+                  overflow: 'hidden',
+                  bgcolor: 'action.hover',
+                  '& img': { transition: 'transform 0.2s ease' },
+                }}
+              >
+                <PlaylistCover coverUrl={item.coverUrl} count={item.count} title={item.title} />
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    inset: 'auto 0 0',
+                    px: 1,
+                    pt: 2.25,
+                    pb: 0.6,
+                    background: 'linear-gradient(transparent, rgba(0, 0, 0, 0.78))',
+                    color: '#fff',
+                    fontSize: 11.5,
+                    lineHeight: 1,
+                    pointerEvents: 'none',
+                  }}
+                >
+                  {tr('{0} 个视频', item.count)}
+                </Box>
+              </Box>
             </Box>
-          )}
-          <Typography variant="h6">{playlist.title}</Typography>
-          {playlistDescription && <Typography>{playlistDescription}</Typography>}
-          {remoteAuthor && <Typography color="text.secondary">{remoteAuthor}</Typography>}
-          <Typography variant="body2" color="text.secondary">
-            {tr('{0} 个视频', playlist.count)}{' '}
-            {remoteViewCount != null && tr('{0} 次观看', remoteViewCount)}
-          </Typography>
-          <Stack direction="row" spacing={1}>
-            <Button
-              size="small"
-              variant="contained"
-              component={Link}
-              to={`/video/${videos[0]?.videoCode ?? ''}`}
-              disabled={!videos.length}
+            <Stack
+              direction="row"
+              spacing={0.5}
+              sx={{ pt: 0.85, pl: 0.25, alignItems: 'center', justifyContent: 'space-between' }}
             >
-              {tr('播放全部')}
-            </Button>
-            {account && (
-              <Button size="small" variant="outlined" onClick={sharePlaylist}>
-                {tr('分享')}
-              </Button>
-            )}
-          </Stack>
-        </Stack>
-      )}
+              <Typography
+                className="playlist-title"
+                variant="subtitle2"
+                noWrap
+                title={item.title}
+                onClick={() => openPlaylist(item.id)}
+                sx={{
+                  fontSize: 13.5,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  flex: 1,
+                  minWidth: 0,
+                  transition: 'color 0.15s ease',
+                }}
+              >
+                {item.title}
+              </Typography>
+              <IconButton
+                size="small"
+                aria-label={item.title}
+                onClick={(event) => setMenu({ anchor: event.currentTarget, item })}
+                sx={{ p: 0.35, color: 'text.secondary', '&:hover': { color: 'text.primary' } }}
+              >
+                <MoreVertIcon sx={{ fontSize: 18 }} />
+              </IconButton>
+            </Stack>
+          </Box>
+        ))}
+      </VideoGrid>
 
-      {playlist && remotePending && account && <LoadingState label={tr('正在加载片单…')} />}
-      {playlist && remoteError && <RequestError error={remoteError} onRetry={onRetryRemote} />}
+      <Menu
+        anchorEl={menu?.anchor}
+        open={Boolean(menu)}
+        onClose={() => setMenu(null)}
+        slotProps={{
+          paper: { sx: { borderRadius: '10px', border: '1px solid', borderColor: 'divider' } },
+        }}
+      >
+        <MenuItem
+          dense
+          onClick={() => {
+            if (menu) {
+              setEditingTarget(menu.item);
+              setMenu(null);
+            }
+          }}
+        >
+          <ListItemIcon>
+            <EditOutlinedIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>{tr('编辑片单')}</ListItemText>
+        </MenuItem>
+        {account && (
+          <MenuItem dense onClick={() => menu && void handleShare(menu.item)}>
+            <ListItemIcon>
+              <ShareOutlinedIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>{tr('分享')}</ListItemText>
+          </MenuItem>
+        )}
+        <MenuItem
+          dense
+          onClick={() => menu && void handleDelete(menu.item.id)}
+          sx={{ color: 'error.light' }}
+        >
+          <ListItemIcon sx={{ color: 'inherit' }}>
+            <DeleteOutlineRoundedIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>{tr('删除片单')}</ListItemText>
+        </MenuItem>
+      </Menu>
 
-      <Dialog open={editing} onClose={() => setEditing(false)} fullWidth maxWidth="xs">
-        <DialogTitle>{playlist ? tr('编辑片单') : tr('新建片单')}</DialogTitle>
-        <DialogContent>
-          <Stack spacing={2} sx={{ pt: 1 }}>
-            <TextField
-              label={tr('名称')}
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-            />
-            <TextField
-              label={tr('简介')}
-              value={description}
-              onChange={(event) => setDescription(event.target.value)}
-            />
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setEditing(false)}>{tr('取消')}</Button>
-          <Button variant="contained" onClick={savePlaylist}>
-            {tr('保存')}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <PlaylistEditorDialog
+        open={editingTarget !== null}
+        isEdit={Boolean(editingItem)}
+        initialTitle={editingItem?.title ?? ''}
+        initialDescription={editingItem?.description ?? ''}
+        onClose={() => setEditingTarget(null)}
+        onSave={handleSave}
+      />
+
+      <NoticeToast notice={notice} onClose={() => setNotice(null)} />
     </>
   );
 }

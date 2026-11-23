@@ -134,7 +134,7 @@ export function mediaReferer(settings: Partial<AppSettings>, pageUrl: string): s
 
 export function installRequestHeaders(
   browserSession: Session,
-  contents?: WebContents,
+  contents?: WebContents | ((webContentsId: number) => WebContents | undefined),
   getSettings: () => Partial<AppSettings> = () => ({}),
 ) {
   browserSession.webRequest.onBeforeSendHeaders(async (details, callback) => {
@@ -153,18 +153,25 @@ export function installRequestHeaders(
         headers[name] = [...cookies, `cf_clearance=${clearance.value}`].join('; ');
       }
     }
+    const target =
+      typeof contents === 'function'
+        ? details.webContentsId !== undefined
+          ? contents(details.webContentsId)
+          : undefined
+        : contents && details.webContentsId === contents.id
+          ? contents
+          : undefined;
     if (
-      contents &&
-      details.webContentsId === contents.id &&
+      target &&
       (['media', 'image'].includes(details.resourceType) ||
-        (details.resourceType === 'xhr' && /^#\/video\//.test(new URL(contents.getURL()).hash)))
+        (details.resourceType === 'xhr' && /^#\/video\//.test(new URL(target.getURL()).hash)))
     ) {
       for (const name of Object.keys(headers)) {
         if (name.toLowerCase() === 'referer') {
           delete headers[name];
         }
       }
-      headers.Referer = mediaReferer(getSettings(), contents.getURL());
+      headers.Referer = mediaReferer(getSettings(), target.getURL());
       if (headers.Referer === 'https://www.getchu.com/') {
         headers.Cookie = 'getchu_adalt_flag=getchu.com; gc=gc';
       }

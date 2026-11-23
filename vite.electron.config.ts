@@ -16,6 +16,7 @@ export default defineConfig({
         backup: 'electron/backup.ts',
         comic_cache: 'electron/comic_cache.ts',
         downloads: 'electron/downloads.ts',
+        windows: 'electron/windows.ts',
       },
       formats: ['cjs'],
       fileName: (_format, entryName) => `${entryName}.js`,

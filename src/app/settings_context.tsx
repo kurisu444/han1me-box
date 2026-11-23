@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
-import { createAppSettings, type AppSettings } from '../core/settings';
+import { appSettingsFromJson, createAppSettings, type AppSettings } from '../core/settings';
 import { loadSettings, saveSettings } from '../data/local/settings_store';
 
 export const SettingsContext = createContext<{
@@ -30,8 +30,16 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
           setReady(true);
         }
       });
+    const unsubscribe = window.electron.store.onChange((fileName, value) => {
+      if (fileName === 'setting.json' && value && typeof value === 'object') {
+        const next = appSettingsFromJson(value as Partial<AppSettings>);
+        current.current = next;
+        setSettings(next);
+      }
+    });
     return () => {
       active = false;
+      unsubscribe();
     };
   }, []);
 

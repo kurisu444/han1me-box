@@ -50,7 +50,7 @@ test('默认配置保持原值，每次创建拥有独立数组', () => {
   assert.equal(settings.defaultPlaybackSpeed, 1);
   assert.equal(settings.commentsEnabled, true);
   assert.equal(settings.showHomeFeatured, true);
-  assert.equal(settings.skipSeconds, 80);
+  assert.equal(settings.skipSeconds, 5);
   assert.deepEqual(appSettingsFromJson({}), settings);
   settings.homeSectionOrder.push('test');
   assert.deepEqual(createAppSettings().homeSectionOrder, []);

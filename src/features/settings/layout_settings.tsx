@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import {
   closestCenter,
   DndContext,
@@ -30,15 +30,11 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import { useQuery } from '@tanstack/react-query';
 import { useI18n } from '../../app/i18n';
 import { useSaveSettings, useSettings } from '../../app/settings_context';
-import { defaultHomeSectionOrder, homeBaseUrl, resolvedLibraryTabOrder } from '../../core/settings';
-import { home } from '../../data/han1me_repository';
-import { localize, searchLocale, searchOptionCatalog } from '../../data/search_option_catalog';
-import { useAccount } from '../account/account_controller';
-import { homeSectionKey } from '../explore/explore_page';
-import { LoadingState, RequestError } from '../shared/request_error';
+import { resolvedLibraryTabOrder } from '../../core/settings';
+import { searchLocale } from '../../data/search_option_catalog';
+import { exploreChannelLabel, orderedExploreChannels } from '../explore/explore_channels';
 import { SettingRow } from './setting_controls';
 
 export const libraryTabLabels: Record<string, string> = {
@@ -175,47 +171,36 @@ function HomeLayoutDialog({ onClose }: { onClose: () => void }) {
   const tr = useI18n();
   const settings = useSettings();
   const save = useSaveSettings();
-  const { account, ready } = useAccount();
-  const base = useMemo(() => homeBaseUrl(settings), [settings]);
-  const resource = useQuery({ ...home(base, account?.id, true), enabled: ready !== false });
   const [order, setOrder] = useState(settings.homeSectionOrder);
   const [hidden, setHidden] = useState(settings.hiddenHomeSections);
 
   const locale = searchLocale(settings.language, navigator.language);
-  const activeOrder: readonly string[] = order.length ? order : defaultHomeSectionOrder;
-  const sections = [...(resource.data?.sections ?? [])].sort((a, b) => {
-    const rank = (key: string) =>
-      activeOrder.includes(key) ? activeOrder.indexOf(key) : activeOrder.length;
-    return rank(homeSectionKey(a)) - rank(homeSectionKey(b));
-  });
+  const channels = orderedExploreChannels(order);
+  const visibleCount = channels.filter((channel) => !hidden.includes(channel.labelKey)).length;
 
   function toggle(key: string) {
-    setHidden((values) =>
-      values.includes(key) ? values.filter((value) => value !== key) : [...values, key],
-    );
+    setHidden((values) => {
+      if (values.includes(key)) {
+        return values.filter((value) => value !== key);
+      }
+      return visibleCount > 1 ? [...values, key] : values;
+    });
   }
 
   return (
     <SortableDialog
-      title={tr('首页分区排序与显示')}
-      status={
-        <>
-          {resource.isPending && <LoadingState label={tr('正在读取分区…')} />}
-          {resource.error && <RequestError error={resource.error} onRetry={resource.refetch} />}
-        </>
-      }
-      items={sections.map((section) => {
-        const key = homeSectionKey(section);
+      title={tr('首页顶栏频道')}
+      items={channels.map((channel) => {
+        const key = channel.labelKey;
+        const checked = !hidden.includes(key);
         return {
           id: key,
-          label:
-            localize(searchOptionCatalog.genres, section.title, locale) ??
-            localize(searchOptionCatalog.sorts, section.title, locale) ??
-            section.title,
+          label: exploreChannelLabel(channel, locale),
           leading: (
             <Checkbox
               size="small"
-              checked={!hidden.includes(key)}
+              checked={checked}
+              disabled={checked && visibleCount <= 1}
               onChange={() => toggle(key)}
               sx={{ p: 0.25 }}
             />
@@ -246,7 +231,7 @@ export function LayoutSettings() {
   return (
     <Stack spacing={1.25}>
       <SettingRow
-        title={tr('首页分区排序与隐藏')}
+        title={tr('首页顶栏频道')}
         control={<ChevronRightIcon color="action" />}
         onClick={() => setOpen('home')}
       />

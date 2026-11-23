@@ -5,6 +5,13 @@ import * as accountApi from './remote/account_api';
 import * as api from './remote/han1me_api';
 import * as previewApi from './remote/preview_api';
 
+function shouldRetryTransient(failureCount: number, error: Error): boolean {
+  if (failureCount >= 2 || error instanceof api.CloudflareChallengeException) {
+    return false;
+  }
+  return !/\bHTTP 4\d\d\b/.test(error.message);
+}
+
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -53,6 +60,8 @@ export const comments = (baseUrl: string, id: string, type = 'video', accountId?
   queryOptions({
     queryKey: ['han1me', 'comments', baseUrl, type, id, accountId],
     queryFn: () => api.comments(baseUrl, id, type),
+    retry: shouldRetryTransient,
+    retryDelay: (attempt) => 600 * (attempt + 1),
     staleTime: 600000,
     gcTime: 600000,
   });
@@ -61,6 +70,8 @@ export const replies = (baseUrl: string, id: string) =>
   queryOptions({
     queryKey: ['han1me', 'replies', baseUrl, id],
     queryFn: () => api.replies(baseUrl, id),
+    retry: shouldRetryTransient,
+    retryDelay: (attempt) => 600 * (attempt + 1),
   });
 
 export function clearRequests() {

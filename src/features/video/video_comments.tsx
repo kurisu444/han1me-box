@@ -1,20 +1,32 @@
-import { useAccount } from '../account/account_controller';
-import { useI18n } from '../../app/i18n';
-import { CommentActions, CommentActionsContext } from './comment_actions';
-import { useMemo, useState } from 'react';
-import { Alert, Avatar, Box, Button, MenuItem, Stack, TextField, Typography } from '@mui/material';
+import { useMemo, useState, type MouseEvent } from 'react';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import ReplyIcon from '@mui/icons-material/Reply';
-import ThumbUpOutlinedIcon from '@mui/icons-material/ThumbUpOutlined';
+import SortIcon from '@mui/icons-material/Sort';
+import {
+  Alert,
+  Avatar,
+  Box,
+  Button,
+  IconButton,
+  Menu,
+  MenuItem,
+  Stack,
+  Tooltip,
+  Typography,
+} from '@mui/material';
+import { useQuery } from '@tanstack/react-query';
+import { useI18n } from '../../app/i18n';
 import { useSettings } from '../../app/settings_context';
 import { resolvedBaseUrl } from '../../core/settings';
 import * as repository from '../../data/han1me_repository';
 import type { Comment, VideoDetail } from '../../domain/models/video';
-import { RequestError, LoadingState } from '../shared/request_error';
-import { useQuery } from '@tanstack/react-query';
+import { useAccount } from '../account/account_controller';
+import { LoadingState, RequestError } from '../shared/request_error';
+import { CommentActions, CommentActionsContext, CommentComposer } from './comment_actions';
 import { visibleComments, type CommentSort } from './video_helpers';
 
-const sortLabels = {
+const sortLabels: Record<CommentSort, string> = {
   latest: '最新',
   earliest: '最早',
   mostReplies: '回复最多',
@@ -22,62 +34,57 @@ const sortLabels = {
   mostDislikes: '踩最多',
 };
 
-function CommentContent({ comment }: { comment: Comment }) {
-  const tr = useI18n();
-
+function CommentContent({ comment, compact = false }: { comment: Comment; compact?: boolean }) {
   return (
-    <Stack direction="row" spacing={1.5}>
-      <Avatar src={comment.avatarUrl} alt={comment.username} />
-      <Box
+    <Stack direction="row" spacing={1.25} sx={{ alignItems: 'flex-start' }}>
+      <Avatar
+        src={comment.avatarUrl}
+        alt={comment.username}
         sx={{
-          minWidth: 0,
-          flex: 1,
+          width: compact ? 24 : 32,
+          height: compact ? 24 : 32,
+          fontSize: compact ? 11 : 13,
+          flexShrink: 0,
+          mt: 0.25,
         }}
       >
-        <Stack
-          direction="row"
-          spacing={1.5}
-          useFlexGap
-          sx={{
-            flexWrap: 'wrap',
-            alignItems: 'baseline',
-            mb: 1,
-          }}
+        {comment.username.slice(0, 1).toUpperCase()}
+      </Avatar>
+      <Box sx={{ minWidth: 0, flex: 1 }}>
+        <Typography
+          variant="subtitle2"
+          noWrap
+          sx={{ fontSize: compact ? 12 : 13, fontWeight: 600, lineHeight: 1.35 }}
         >
-          <Typography variant="subtitle2">{comment.username}</Typography>
-          <Typography variant="caption" color="text.secondary">
+          {comment.username}
+        </Typography>
+        {comment.timeAgo && (
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ display: 'block', fontSize: 11, lineHeight: 1.3, mt: 0.15 }}
+          >
             {comment.timeAgo}
           </Typography>
-        </Stack>
+        )}
         <Typography
+          variant="body2"
           sx={{
+            mt: 0.75,
             whiteSpace: 'pre-wrap',
             overflowWrap: 'anywhere',
-            lineHeight: 1.8,
+            lineHeight: 1.6,
+            fontSize: compact ? 12.5 : 13,
           }}
         >
           {comment.content}
         </Typography>
-        <Stack
-          direction="row"
-          spacing={0.5}
-          sx={{
-            alignItems: 'center',
-            color: 'text.secondary',
-            mt: 1,
-          }}
-        >
-          <ThumbUpOutlinedIcon fontSize="small" />
-          <Typography variant="caption">
-            {tr('赞')}
-            {comment.likesSum ?? comment.likeCount ?? 0}
-          </Typography>
-        </Stack>
         <CommentActions comment={comment} />
       </Box>
     </Stack>
   );
 }
+
 function Replies({ id }: { id: string }) {
   const tr = useI18n();
   const settings = useSettings();
@@ -87,71 +94,94 @@ function Replies({ id }: { id: string }) {
   const replies = data?.comments ?? [];
 
   if (isPending) {
-    return <LoadingState label={tr('正在加载回复…')} />;
+    return (
+      <Box sx={{ mt: 1, py: 1 }}>
+        <LoadingState label={tr('正在加载回复…')} />
+      </Box>
+    );
   }
   if (error) {
-    return <RequestError error={error} onRetry={refetch} />;
+    return (
+      <Box sx={{ mt: 1 }}>
+        <RequestError error={error} onRetry={refetch} />
+      </Box>
+    );
   }
 
   return (
-    <Stack
-      spacing={2.5}
+    <Box
       sx={{
-        ml: {
-          xs: 2,
-          sm: 6,
-        },
-        mt: 2,
-        pl: 2,
-        borderLeft: 2,
-        borderColor: 'divider',
+        mt: 1,
+        px: 1.5,
+        py: 1.25,
+        borderRadius: '8px',
+        bgcolor: 'action.hover',
       }}
     >
       {replies.length ? (
-        replies.map((reply, index) => (
-          <CommentContent key={`${reply.foreignId}-${index}`} comment={reply} />
-        ))
+        <Stack spacing={1.5}>
+          {replies.map((reply, index) => (
+            <CommentContent
+              key={`${reply.foreignId ?? reply.username}-${index}`}
+              comment={reply}
+              compact
+            />
+          ))}
+        </Stack>
       ) : (
-        <Typography color="text.secondary">{tr('暂无可显示的回复。')}</Typography>
+        <Typography variant="caption" color="text.secondary">
+          {tr('暂无可显示的回复。')}
+        </Typography>
       )}
-    </Stack>
+    </Box>
   );
 }
+
 function CommentCard({ comment }: { comment: Comment }) {
   const tr = useI18n();
   const [expanded, setExpanded] = useState(false);
 
   const replyLabel = expanded
     ? tr('收起回复')
-    : tr('查看回复{0}', comment.replyCount !== undefined ? `（${comment.replyCount}）` : '');
+    : comment.replyCount !== undefined
+      ? tr('共 {0} 条回复', comment.replyCount)
+      : tr('查看回复');
 
   return (
     <Box
       component="article"
       sx={{
-        py: 2.5,
+        py: 1.75,
         borderBottom: 1,
         borderColor: 'divider',
       }}
     >
       <CommentContent comment={comment} />
       {comment.hasMoreReplies && (
-        <Button
-          startIcon={<ReplyIcon />}
-          aria-expanded={expanded}
-          onClick={() => setExpanded((value) => !value)}
-          sx={{
-            ml: 5,
-            mt: 1,
-          }}
-        >
-          {replyLabel}
-        </Button>
+        <Box sx={{ pl: '42px', mt: 0.75 }}>
+          <Button
+            size="small"
+            color="primary"
+            endIcon={
+              expanded ? (
+                <KeyboardArrowUpIcon sx={{ fontSize: '16px !important' }} />
+              ) : (
+                <KeyboardArrowDownIcon sx={{ fontSize: '16px !important' }} />
+              )
+            }
+            aria-expanded={expanded}
+            onClick={() => setExpanded((value) => !value)}
+            sx={{ minWidth: 'auto', px: 0.5, py: 0.15, fontSize: 12 }}
+          >
+            {replyLabel}
+          </Button>
+          {expanded && <Replies id={comment.id} />}
+        </Box>
       )}
-      {expanded && <Replies id={comment.id} />}
     </Box>
   );
 }
+
 export function CommentsList({
   id,
   sort: selectedSort,
@@ -166,12 +196,23 @@ export function CommentsList({
   const baseUrl = useMemo(() => resolvedBaseUrl(settings), [settings]);
   const { account, ready } = useAccount();
   const [localSort, setLocalSort] = useState<CommentSort>('latest');
+  const [sortAnchor, setSortAnchor] = useState<HTMLElement | null>(null);
   const { data, error, isPending, refetch } = useQuery({
     ...repository.comments(baseUrl, id, type, account?.id),
     enabled: ready !== false,
   });
+
   const sort = selectedSort ?? localSort;
   const comments = visibleComments(data?.comments ?? [], settings, sort);
+
+  function openSortMenu(event: MouseEvent<HTMLElement>) {
+    setSortAnchor(event.currentTarget);
+  }
+
+  function chooseSort(value: CommentSort) {
+    setLocalSort(value);
+    setSortAnchor(null);
+  }
 
   if (!settings.commentsEnabled) {
     return <Alert severity="info">{tr('评论已关闭。')}</Alert>;
@@ -191,117 +232,77 @@ export function CommentsList({
         reload: refetch,
       }}
     >
-      <CommentActions targetId={id} type={type} />
-      {!selectedSort && (
-        <TextField
-          select
-          label={tr('排序')}
-          value={localSort}
-          onChange={(event) => setLocalSort(event.target.value as CommentSort)}
-        >
-          {Object.entries(sortLabels).map(([value, label]) => (
-            <MenuItem key={value} value={value}>
-              {tr(label)}
-            </MenuItem>
-          ))}
-        </TextField>
-      )}
-      <Stack
-        direction="row"
-        sx={{
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}
-      >
-        <Typography variant="body2" color="text.secondary">
-          {comments.length}
-          {tr('条评论')}
-        </Typography>
-        <Button startIcon={<RefreshIcon />} onClick={() => refetch()}>
-          {tr('刷新评论')}
-        </Button>
+      <Stack spacing={1.5} sx={{ mb: 0.5 }}>
+        <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
+          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
+            {comments.length} {tr('条评论')}
+          </Typography>
+          <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
+            {!selectedSort && (
+              <>
+                <Button
+                  size="small"
+                  color="inherit"
+                  startIcon={<SortIcon sx={{ fontSize: '15px !important' }} />}
+                  onClick={openSortMenu}
+                  sx={{
+                    minWidth: 'auto',
+                    px: 0.75,
+                    py: 0.25,
+                    fontSize: 12,
+                    color: 'text.secondary',
+                  }}
+                >
+                  {tr(sortLabels[sort])}
+                </Button>
+                <Menu
+                  anchorEl={sortAnchor}
+                  open={Boolean(sortAnchor)}
+                  onClose={() => setSortAnchor(null)}
+                >
+                  {(Object.entries(sortLabels) as [CommentSort, string][]).map(([value, label]) => (
+                    <MenuItem
+                      key={value}
+                      selected={value === sort}
+                      onClick={() => chooseSort(value)}
+                    >
+                      {tr(label)}
+                    </MenuItem>
+                  ))}
+                </Menu>
+              </>
+            )}
+            <Tooltip title={tr('刷新评论')}>
+              <IconButton
+                size="small"
+                aria-label={tr('刷新评论')}
+                onClick={() => refetch()}
+                sx={{ color: 'text.secondary' }}
+              >
+                <RefreshIcon sx={{ fontSize: 16 }} />
+              </IconButton>
+            </Tooltip>
+          </Stack>
+        </Stack>
+        <CommentComposer targetId={id} type={type} />
       </Stack>
       {comments.length ? (
         comments.map((comment, index) => (
           <CommentCard key={`${comment.id}-${index}`} comment={comment} />
         ))
       ) : (
-        <Alert severity="info">{tr('暂无可显示的评论。')}</Alert>
+        <Alert severity="info" sx={{ mt: 1.5 }}>
+          {tr('暂无可显示的评论。')}
+        </Alert>
       )}
     </CommentActionsContext>
   );
 }
+
 export function VideoComments({ video }: { video: VideoDetail }) {
-  const tr = useI18n();
-  const settings = useSettings();
-  const [id, setId] = useState(video.id);
-  const [sorts, setSorts] = useState<Record<string, CommentSort>>({});
-
-  const sort = sorts[id] ?? 'latest';
-
-  function setSort(value: CommentSort) {
-    setSorts((current) => ({ ...current, [id]: value }));
-  }
-
-  const episodes = video.playlist.some((item) => item.id === video.id)
-    ? video.playlist
-    : [
-        {
-          id: video.id,
-          title: video.title,
-        },
-        ...video.playlist,
-      ];
-
-  if (!settings.commentsEnabled) {
-    return <Alert severity="info">{tr('评论已关闭。')}</Alert>;
-  }
-
   return (
     <Box component="section">
-      <Stack
-        direction={{
-          xs: 'column',
-          sm: 'row',
-        }}
-        spacing={2}
-        sx={{
-          mb: 3,
-        }}
-      >
-        <TextField
-          select
-          label={tr('查看评论的剧集')}
-          value={id}
-          onChange={(event) => setId(event.target.value)}
-          sx={{
-            flex: 1,
-            minWidth: 0,
-          }}
-        >
-          {episodes.map((episode) => (
-            <MenuItem key={episode.id} value={episode.id}>
-              {episode.title}
-            </MenuItem>
-          ))}
-        </TextField>
-        <TextField
-          select
-          label={tr('排序')}
-          value={sort}
-          onChange={(event) => setSort(event.target.value as CommentSort)}
-          sx={{
-            minWidth: 150,
-          }}
-        >
-          <MenuItem value="latest">{tr('最新')}</MenuItem>
-          <MenuItem value="earliest">{tr('最早')}</MenuItem>
-          <MenuItem value="mostReplies">{tr('回复最多')}</MenuItem>
-          <MenuItem value="mostLikes">{tr('赞最多')}</MenuItem>
-          <MenuItem value="mostDislikes">{tr('踩最多')}</MenuItem>
-        </TextField>
-      </Stack>
-      <CommentsList key={id} id={id} sort={sort} />
+      <CommentsList key={video.id} id={video.id} />
     </Box>
   );
 }

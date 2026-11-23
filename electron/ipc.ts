@@ -10,6 +10,7 @@ import * as comicCache from './comic_cache';
 import * as downloads from './downloads';
 import * as http from './http';
 import * as store from './store';
+import * as windows from './windows';
 
 export { getSettings } from './store';
 
@@ -36,6 +37,19 @@ export async function registerIpc() {
   });
   ipcMain.handle('window:close', (event) => senderWindow(event).close());
   ipcMain.handle('window:is-maximized', (event) => senderWindow(event).isMaximized());
+  ipcMain.handle('window:is-always-on-top', (event) => senderWindow(event).isAlwaysOnTop());
+  ipcMain.handle('window:set-always-on-top', (event, value: boolean) => {
+    const win = senderWindow(event);
+    win.setAlwaysOnTop(value);
+    return win.isAlwaysOnTop();
+  });
+
+  ipcMain.handle('player:open', (_event, payload: windows.PlayerOpenPayload) =>
+    windows.openPlayerWindow(payload),
+  );
+  ipcMain.handle('player:take-local-video', (_event, id: string) => windows.takeLocalVideo(id));
+  ipcMain.handle('player:take-queue', (_event, id: string) => windows.takeQueue(id));
+  ipcMain.handle('player:focus-main', (_event, route?: string) => windows.focusMainWindow(route));
 
   ipcMain.handle('directory:choose', (_event, initialPath: string) =>
     downloads.chooseDirectory(initialPath),
@@ -52,8 +66,9 @@ export async function registerIpc() {
   );
 
   ipcMain.handle('store:read', (_event, file: string) => store.readStore(file));
-  ipcMain.handle('store:write', async (_event, file: string, value: unknown) => {
+  ipcMain.handle('store:write', async (event, file: string, value: unknown) => {
     await store.writeStore(file, value);
+    windows.broadcastStoreChange(event.sender, file, value);
     if (file === 'setting.json') {
       await downloads.initialize(store.getSettings());
     }
@@ -101,9 +116,6 @@ export async function registerIpc() {
   );
   ipcMain.handle('session:verify', (event, url: string) =>
     account.openVerification(url, senderWindow(event)),
-  );
-  ipcMain.handle('session:tags', (event, url: string, mode: 'add' | 'remove') =>
-    account.openTagEditor(url, mode, senderWindow(event)),
   );
 
   ipcMain.handle('comics:entries', () => comicCache.entries());

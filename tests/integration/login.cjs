@@ -120,10 +120,10 @@ app.on('window-all-closed', () => {});
     account.closeWebsite(parent);
     await profile;
     checkRestored();
-    const tags = account.openTagEditor(base + '/tags', 'add', parent);
+    const closing = account.openProfile(base + '/profile', parent);
     const contents = siteView().webContents;
     parent.close();
-    await tags;
+    await closing;
     assert.equal(contents.isDestroyed(), true);
     console.log('PASS embedded pages resize, cancel and release contents when the app closes');
   } finally {

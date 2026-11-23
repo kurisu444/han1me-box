@@ -73,3 +73,6 @@ export function removeSearchHistory(query: SearchQuery): Promise<void> {
       .map(searchQueryToJson),
   }));
 }
+export function clearSearchHistory(): Promise<void> {
+  return updateJsonStore<HistoryFile>('search_history.json', () => ({ items: [] }));
+}

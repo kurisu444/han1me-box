@@ -1,7 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import type { ComicCacheEntry, ComicDetail } from '../src/domain/models/comic';
 import type { DownloadGroupSort, DownloadState } from '../src/domain/models/download';
-import type { VideoDetail, VideoSource } from '../src/domain/models/video';
+import type { PlaylistQueue, VideoDetail, VideoSource } from '../src/domain/models/video';
 import type { BackupBundle } from '../src/features/settings/data_settings';
 
 export interface Han1meHttpResponse {
@@ -34,6 +34,41 @@ const electronApi = {
       const callback = (_event: unknown, maximized: boolean) => listener(maximized);
       ipcRenderer.on('window:maximized', callback);
       return () => ipcRenderer.removeListener('window:maximized', callback);
+    },
+    isAlwaysOnTop: (): Promise<boolean> => ipcRenderer.invoke('window:is-always-on-top'),
+    setAlwaysOnTop: (value: boolean): Promise<boolean> =>
+      ipcRenderer.invoke('window:set-always-on-top', value),
+    onAlwaysOnTop: (listener: (alwaysOnTop: boolean) => void): (() => void) => {
+      const callback = (_event: unknown, alwaysOnTop: boolean) => listener(alwaysOnTop);
+      ipcRenderer.on('window:always-on-top', callback);
+      return () => ipcRenderer.removeListener('window:always-on-top', callback);
+    },
+    onNavigate: (listener: (route: string) => void): (() => void) => {
+      const callback = (_event: unknown, route: string) => listener(route);
+      ipcRenderer.on('app:navigate', callback);
+      return () => ipcRenderer.removeListener('app:navigate', callback);
+    },
+  },
+  player: {
+    open: (payload: {
+      id: string;
+      localVideo?: VideoDetail;
+      queue?: PlaylistQueue;
+    }): Promise<void> => ipcRenderer.invoke('player:open', payload),
+    takeLocalVideo: (id: string): Promise<VideoDetail | undefined> =>
+      ipcRenderer.invoke('player:take-local-video', id),
+    takeQueue: (id: string): Promise<PlaylistQueue | undefined> =>
+      ipcRenderer.invoke('player:take-queue', id),
+    focusMain: (route?: string): Promise<void> => ipcRenderer.invoke('player:focus-main', route),
+    onOpen: (
+      listener: (payload: { id: string; localVideo?: VideoDetail; queue?: PlaylistQueue }) => void,
+    ): (() => void) => {
+      const callback = (
+        _event: unknown,
+        payload: { id: string; localVideo?: VideoDetail; queue?: PlaylistQueue },
+      ) => listener(payload);
+      ipcRenderer.on('player:open', callback);
+      return () => ipcRenderer.removeListener('player:open', callback);
     },
   },
   chooseDirectory: (initialPath: string): Promise<string | undefined> =>
@@ -99,8 +134,6 @@ const electronApi = {
       return () => ipcRenderer.removeListener('session:website-changed', callback);
     },
     profile: (url: string): Promise<void> => ipcRenderer.invoke('session:profile', url),
-    tags: (url: string, mode: 'add' | 'remove'): Promise<void> =>
-      ipcRenderer.invoke('session:tags', url, mode),
     cookies: (url: string): Promise<string> => ipcRenderer.invoke('session:cookies', url),
     importCookies: (url: string, value: string): Promise<void> =>
       ipcRenderer.invoke('session:import', url, value),
@@ -113,6 +146,12 @@ const electronApi = {
     read: (fileName: StoreFileName): Promise<unknown> => ipcRenderer.invoke('store:read', fileName),
     write: (fileName: StoreFileName, value: unknown): Promise<void> =>
       ipcRenderer.invoke('store:write', fileName, value),
+    onChange: (listener: (fileName: StoreFileName, value: unknown) => void): (() => void) => {
+      const callback = (_event: unknown, fileName: StoreFileName, value: unknown) =>
+        listener(fileName, value);
+      ipcRenderer.on('store:changed', callback);
+      return () => ipcRenderer.removeListener('store:changed', callback);
+    },
   },
 
   http: {

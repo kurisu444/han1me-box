@@ -10,6 +10,11 @@ export interface VideoCard {
   artistQuery?: string;
 }
 
+export interface PlaylistQueue {
+  title: string;
+  items: VideoCard[];
+}
+
 export interface HomeSection {
   title: string;
   videos: VideoCard[];

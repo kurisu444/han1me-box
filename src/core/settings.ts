@@ -4,7 +4,7 @@ export type AppThemeColor =
   'rose' | 'blue' | 'teal' | 'amber' | 'green' | 'orange' | 'indigo' | 'pink' | 'purple' | 'custom';
 export type VideoAspectRatio = 'auto' | 'crop' | 'stretch' | 'ratio4x3';
 
-export const defaultHomeSectionOrder = ['最新上市', '最新上傳', '他們在看'] as const;
+export const defaultHomeSectionOrder = ['他們在看', '最新上市', '最新上傳'] as const;
 
 export const defaultLibraryTabKeys = [
   'watch-later',
@@ -107,7 +107,7 @@ export function createAppSettings(values: Partial<AppSettings> = {}): AppSetting
     loopPlayback: false,
     autoPictureInPicture: false,
     videoAspectRatio: 'auto',
-    skipSeconds: 80,
+    skipSeconds: 5,
     webDavEnabled: false,
     webDavHistorySync: false,
     webDavFavoriteSync: false,

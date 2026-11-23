@@ -1,6 +1,4 @@
 import { useState, type ReactNode } from 'react';
-import BugReportOutlinedIcon from '@mui/icons-material/BugReportOutlined';
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import CloudSyncOutlinedIcon from '@mui/icons-material/CloudSyncOutlined';
 import DashboardOutlinedIcon from '@mui/icons-material/DashboardOutlined';
 import FilterAltOutlinedIcon from '@mui/icons-material/FilterAltOutlined';
@@ -8,6 +6,7 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import PaletteOutlinedIcon from '@mui/icons-material/PaletteOutlined';
 import PlayCircleOutlinedIcon from '@mui/icons-material/PlayCircleOutlined';
 import PublicOutlinedIcon from '@mui/icons-material/PublicOutlined';
+import ReceiptLongOutlinedIcon from '@mui/icons-material/ReceiptLongOutlined';
 import {
   Box,
   List,
@@ -18,18 +17,18 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
 import { useI18n } from '../../app/i18n';
+import { AboutPage, DebugLogPage } from './about_page';
 import { AppearanceSettings, InterfaceLayoutSettings } from './appearance_settings';
 import { ContentSettings } from './content_settings';
 import { DataSettings } from './data_settings';
 import { NetworkSettings } from './network_settings';
 import { PlaybackSettings } from './playback_settings';
-import { SettingRow, SettingSection } from './setting_controls';
 
 export type { MirrorProbeResult } from './network_settings';
 
-type SettingsTab = 'appearance' | 'layout' | 'playback' | 'network' | 'content' | 'data' | 'about';
+type SettingsTab =
+  'appearance' | 'layout' | 'playback' | 'network' | 'content' | 'data' | 'logs' | 'about';
 
 interface NavGroup {
   title: string;
@@ -61,17 +60,20 @@ const navGroups: NavGroup[] = [
     ],
   },
   {
-    title: '存储与关于',
+    title: '存储',
+    items: [{ id: 'data', label: '数据与同步', icon: <CloudSyncOutlinedIcon fontSize="small" /> }],
+  },
+  {
+    title: '其他',
     items: [
-      { id: 'data', label: '数据与同步', icon: <CloudSyncOutlinedIcon fontSize="small" /> },
-      { id: 'about', label: '诊断与关于', icon: <InfoOutlinedIcon fontSize="small" /> },
+      { id: 'logs', label: '日志', icon: <ReceiptLongOutlinedIcon fontSize="small" /> },
+      { id: 'about', label: '关于', icon: <InfoOutlinedIcon fontSize="small" /> },
     ],
   },
 ];
 
 export function SettingsPage() {
   const tr = useI18n();
-  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<SettingsTab>('appearance');
 
   const panels: Record<SettingsTab, ReactNode> = {
@@ -81,22 +83,8 @@ export function SettingsPage() {
     network: <NetworkSettings />,
     content: <ContentSettings />,
     data: <DataSettings />,
-    about: (
-      <SettingSection title={tr('诊断与关于')}>
-        <SettingRow
-          icon={<BugReportOutlinedIcon />}
-          title={tr('诊断日志')}
-          control={<ChevronRightIcon color="action" />}
-          onClick={() => navigate('/settings/logs')}
-        />
-        <SettingRow
-          icon={<InfoOutlinedIcon />}
-          title={tr('关于')}
-          control={<ChevronRightIcon color="action" />}
-          onClick={() => navigate('/settings/about')}
-        />
-      </SettingSection>
-    ),
+    logs: <DebugLogPage embedded />,
+    about: <AboutPage embedded onOpenLogs={() => setActiveTab('logs')} />,
   };
 
   return (
