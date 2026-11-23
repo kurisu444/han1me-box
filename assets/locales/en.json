@@ -526,5 +526,8 @@
   "展开全部 ({0})": "Show all ({0})",
   "静音": "Mute",
   "取消静音": "Unmute",
-  "退出全屏": "Exit fullscreen"
+  "退出全屏": "Exit fullscreen",
+  "常规": "General",
+  "关闭时最小化到托盘": "Minimize to tray on close",
+  "关闭主窗口时隐藏到系统托盘，保持后台下载": "Hide the main window to the system tray when closed to keep downloads running"
 }

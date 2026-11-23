@@ -13,9 +13,9 @@ import {
   ListItemButton,
   ListItemIcon,
   ListItemText,
-  Paper,
   Stack,
   Typography,
+  useTheme,
 } from '@mui/material';
 import { useI18n } from '../../app/i18n';
 import { AboutPage, DebugLogPage } from './about_page';
@@ -74,6 +74,8 @@ const navGroups: NavGroup[] = [
 
 export function SettingsPage() {
   const tr = useI18n();
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
   const [activeTab, setActiveTab] = useState<SettingsTab>('appearance');
 
   const panels: Record<SettingsTab, ReactNode> = {
@@ -97,58 +99,58 @@ export function SettingsPage() {
         '@media (max-width:720px)': { gridTemplateColumns: 'minmax(0, 1fr)' },
       }}
     >
-      <Stack spacing={2} sx={{ position: 'sticky', top: 0 }}>
+      <Stack component="nav" spacing={1.75} sx={{ position: 'sticky', top: 0 }}>
         {navGroups.map((group) => (
-          <Stack key={group.title} spacing={0.75}>
-            <Typography variant="caption" color="primary" sx={{ fontWeight: 700, px: 1 }}>
+          <Stack key={group.title} spacing={0.5}>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ fontWeight: 600, fontSize: 11.5, px: 1.5 }}
+            >
               {tr(group.title)}
             </Typography>
-            <Paper variant="outlined" sx={{ borderRadius: '12px', overflow: 'hidden' }}>
-              <List disablePadding sx={{ py: 0.5 }}>
-                {group.items.map((item) => {
-                  const selected = activeTab === item.id;
-                  return (
-                    <ListItemButton
-                      key={item.id}
-                      selected={selected}
-                      onClick={() => setActiveTab(item.id)}
+            <List disablePadding>
+              {group.items.map((item) => {
+                const selected = activeTab === item.id;
+                return (
+                  <ListItemButton
+                    key={item.id}
+                    selected={selected}
+                    onClick={() => setActiveTab(item.id)}
+                    sx={{
+                      borderRadius: '10px',
+                      py: 0.9,
+                      px: 1.5,
+                      mb: 0.25,
+                      color: selected ? 'primary.main' : 'text.primary',
+                      '&.Mui-selected': {
+                        bgcolor: isDark ? 'rgba(213, 182, 239, 0.14)' : 'rgba(109, 63, 144, 0.1)',
+                      },
+                      '&.Mui-selected:hover': {
+                        bgcolor: isDark ? 'rgba(213, 182, 239, 0.2)' : 'rgba(109, 63, 144, 0.14)',
+                      },
+                    }}
+                  >
+                    <ListItemIcon
                       sx={{
-                        position: 'relative',
-                        py: 1.1,
-                        px: 2,
-                        color: selected ? 'primary.main' : 'text.primary',
-                        '&.Mui-selected': { bgcolor: 'transparent' },
-                        '&.Mui-selected:hover': { bgcolor: 'action.hover' },
-                        '&::before': selected
-                          ? {
-                              content: '""',
-                              position: 'absolute',
-                              left: 4,
-                              top: '28%',
-                              bottom: '28%',
-                              width: 3,
-                              borderRadius: 999,
-                              bgcolor: 'primary.main',
-                            }
-                          : undefined,
+                        minWidth: 32,
+                        color: selected ? 'primary.main' : 'text.secondary',
                       }}
                     >
-                      <ListItemIcon sx={{ minWidth: 32, color: 'inherit' }}>
-                        {item.icon}
-                      </ListItemIcon>
-                      <ListItemText
-                        primary={tr(item.label)}
-                        slotProps={{
-                          primary: {
-                            sx: { fontSize: 13.5, fontWeight: selected ? 700 : 500 },
-                          },
-                        }}
-                      />
-                    </ListItemButton>
-                  );
-                })}
-              </List>
-            </Paper>
+                      {item.icon}
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={tr(item.label)}
+                      slotProps={{
+                        primary: {
+                          sx: { fontSize: 13.5, fontWeight: selected ? 600 : 500 },
+                        },
+                      }}
+                    />
+                  </ListItemButton>
+                );
+              })}
+            </List>
           </Stack>
         ))}
       </Stack>

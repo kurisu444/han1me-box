@@ -106,164 +106,162 @@ export function VideoDetailView({
         }}
       >
         <VideoPlayerPanel video={video} onNext={next ? playNext : undefined} />
-        <Tooltip title={tr(sidebarOpen ? '收起信息栏' : '展开信息栏')} placement="left">
-          <IconButton
-            aria-label={tr(sidebarOpen ? '收起信息栏' : '展开信息栏')}
-            aria-expanded={sidebarOpen}
-            aria-controls="video-sidebar"
-            onClick={toggleSidebar}
-            sx={{
-              position: 'absolute',
-              right: 0,
-              top: '50%',
-              transform: 'translateY(-50%)',
-              zIndex: 3,
-              width: 28,
-              height: 64,
-              borderRadius: '8px 0 0 8px',
-              bgcolor: 'rgba(0, 0, 0, 0.45)',
-              color: '#fff',
-              '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.7)' },
-              '@media (max-width:860px)': sidebarOpen
-                ? {
-                    top: 'auto',
-                    bottom: 0,
-                    right: '50%',
-                    transform: 'translateX(50%)',
-                    width: 64,
-                    height: 28,
-                    borderRadius: '8px 8px 0 0',
-                    '& svg': { transform: 'rotate(90deg)' },
-                  }
-                : {},
-            }}
-          >
-            {sidebarOpen ? <ChevronRightIcon /> : <ChevronLeftIcon />}
-          </IconButton>
-        </Tooltip>
-      </Box>
-      {sidebarOpen && (
-        <Box
-          component="aside"
-          id="video-sidebar"
+        <IconButton
+          disableRipple
+          aria-label={tr(sidebarOpen ? '收起信息栏' : '展开信息栏')}
+          aria-expanded={sidebarOpen}
+          aria-controls="video-sidebar"
+          onClick={toggleSidebar}
           sx={{
-            width: 360,
-            flexShrink: 0,
-            height: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            bgcolor: 'background.paper',
-            borderLeft: 1,
-            borderColor: 'divider',
-            minHeight: 0,
-            '@media (max-width:860px)': {
-              width: '100%',
-              flex: 1,
-              height: 'auto',
-              borderLeft: 0,
-              borderTop: 1,
-            },
+            position: 'absolute',
+            right: 0,
+            top: '50%',
+            transform: 'translateY(-50%)',
+            zIndex: 3,
+            width: 28,
+            height: 64,
+            borderRadius: '8px 0 0 8px',
+            bgcolor: 'rgba(0, 0, 0, 0.45)',
+            color: '#fff',
+            '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.7)' },
+            '&:active': { scale: 'none' },
+            '@media (max-width:860px)': sidebarOpen
+              ? {
+                  top: 'auto',
+                  bottom: 0,
+                  right: '50%',
+                  transform: 'translateX(50%)',
+                  width: 64,
+                  height: 28,
+                  borderRadius: '8px 8px 0 0',
+                  '& svg': { transform: 'rotate(90deg)' },
+                }
+              : {},
           }}
         >
-          <Stack
-            direction="row"
+          {sidebarOpen ? <ChevronRightIcon /> : <ChevronLeftIcon />}
+        </IconButton>
+      </Box>
+      <Box
+        component="aside"
+        id="video-sidebar"
+        sx={{
+          width: 360,
+          flexShrink: 0,
+          height: '100%',
+          display: sidebarOpen ? 'flex' : 'none',
+          flexDirection: 'column',
+          bgcolor: 'background.paper',
+          borderLeft: 1,
+          borderColor: 'divider',
+          minHeight: 0,
+          '@media (max-width:860px)': {
+            width: '100%',
+            flex: 1,
+            height: 'auto',
+            borderLeft: 0,
+            borderTop: 1,
+          },
+        }}
+      >
+        <Stack
+          direction="row"
+          sx={{
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            px: 1.5,
+            borderBottom: 1,
+            borderColor: 'divider',
+            flexShrink: 0,
+          }}
+        >
+          <Tabs
+            value={activeTab}
+            onChange={changeTab}
+            aria-label={tr('视频信息')}
             sx={{
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              px: 1.5,
-              borderBottom: 1,
-              borderColor: 'divider',
-              flexShrink: 0,
-            }}
-          >
-            <Tabs
-              value={activeTab}
-              onChange={changeTab}
-              aria-label={tr('视频信息')}
-              sx={{
+              minHeight: 44,
+              '& .MuiTab-root': {
                 minHeight: 44,
-                '& .MuiTab-root': {
-                  minHeight: 44,
-                  minWidth: 64,
-                  px: 1.5,
-                  py: 0.75,
-                  fontSize: 13.5,
-                },
-              }}
-            >
-              <Tab id="details-tab" value="details" label={tr('简介')} aria-controls="video-info" />
-              {settings.commentsEnabled && (
-                <Tab
-                  id="comments-tab"
-                  value="comments"
-                  aria-controls="video-info"
-                  label={
-                    <Stack direction="row" spacing={0.75} sx={{ alignItems: 'center' }}>
-                      <span>{tr('评论')}</span>
-                      {video.commentCount !== undefined && (
-                        <Box
-                          component="span"
-                          sx={{
-                            px: 0.75,
-                            py: 0.1,
-                            borderRadius: 999,
-                            fontSize: 11,
-                            fontWeight: 700,
-                            lineHeight: 1.4,
-                            bgcolor: 'primary.main',
-                            color: 'primary.contrastText',
-                          }}
-                        >
-                          {video.commentCount}
-                        </Box>
-                      )}
-                    </Stack>
-                  }
-                />
-              )}
-            </Tabs>
-            {onRefresh && (
-              <Tooltip title={tr('刷新详情')}>
-                <IconButton size="small" aria-label={tr('刷新详情')} onClick={onRefresh}>
-                  <RefreshIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-            )}
-          </Stack>
-          <Box
-            id="video-info"
-            role="tabpanel"
-            aria-labelledby={`${activeTab}-tab`}
-            sx={{
-              flex: 1,
-              minHeight: 0,
-              overflowY: 'auto',
-              px: 2,
-              py: 2,
+                minWidth: 64,
+                px: 1.5,
+                py: 0.75,
+                fontSize: 13.5,
+              },
             }}
           >
-            <Box hidden={activeTab !== 'details'}>
-              {offlineNotice && (
-                <Alert severity="info" sx={{ mb: 2 }}>
-                  {tr('无法获取在线资料，正在使用离线视频信息')}
-                </Alert>
-              )}
-              <VideoDetailContent
-                video={video}
-                related={related}
-                playlistTitle={queue?.title}
-                onSelectEpisode={switchEpisode}
-                onTitleChanged={setTranslatedTitle}
+            <Tab id="details-tab" value="details" label={tr('简介')} aria-controls="video-info" />
+            {settings.commentsEnabled && (
+              <Tab
+                id="comments-tab"
+                value="comments"
+                aria-controls="video-info"
+                label={
+                  <Stack direction="row" spacing={0.75} sx={{ alignItems: 'center' }}>
+                    <span>{tr('评论')}</span>
+                    {video.commentCount !== undefined && (
+                      <Box
+                        component="span"
+                        sx={{
+                          px: 0.75,
+                          py: 0.1,
+                          borderRadius: 999,
+                          fontSize: 11,
+                          fontWeight: 700,
+                          lineHeight: 1.4,
+                          bgcolor: 'primary.main',
+                          color: 'primary.contrastText',
+                        }}
+                      >
+                        {video.commentCount}
+                      </Box>
+                    )}
+                  </Stack>
+                }
               />
-            </Box>
-            {commentsVisited && (
-              <Box hidden={activeTab !== 'comments'}>
-                <VideoComments key={video.id} video={video} />
-              </Box>
             )}
+          </Tabs>
+          {onRefresh && (
+            <Tooltip title={tr('刷新详情')}>
+              <IconButton size="small" aria-label={tr('刷新详情')} onClick={onRefresh}>
+                <RefreshIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
+        </Stack>
+        <Box
+          id="video-info"
+          role="tabpanel"
+          aria-labelledby={`${activeTab}-tab`}
+          sx={{
+            flex: 1,
+            minHeight: 0,
+            overflowY: 'auto',
+            px: 2,
+            py: 2,
+          }}
+        >
+          <Box hidden={activeTab !== 'details'}>
+            {offlineNotice && (
+              <Alert severity="info" sx={{ mb: 2 }}>
+                {tr('无法获取在线资料，正在使用离线视频信息')}
+              </Alert>
+            )}
+            <VideoDetailContent
+              video={video}
+              related={related}
+              playlistTitle={queue?.title}
+              onSelectEpisode={switchEpisode}
+              onTitleChanged={setTranslatedTitle}
+            />
           </Box>
+          {commentsVisited && (
+            <Box hidden={activeTab !== 'comments'}>
+              <VideoComments key={video.id} video={video} />
+            </Box>
+          )}
         </Box>
-      )}
+      </Box>
     </Box>
   );
 }

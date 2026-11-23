@@ -1,0 +1,99 @@
+@font-face {
+  font-family: 'HarmonyOS Sans SC';
+  src: url('../../assets/fonts/HarmonyOS Sans/HarmonyOS_Sans_SC.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  margin: 0;
+  padding-top: var(--titlebar-height);
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: rgba(128, 128, 128, 0.35);
+  border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(128, 128, 128, 0.55);
+}
+
+@keyframes pageEnter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes themeExpand {
+  from {
+    clip-path: circle(0px at var(--vt-x, 50%) var(--vt-y, 50%));
+  }
+  to {
+    clip-path: circle(var(--vt-r, 150vmax) at var(--vt-x, 50%) var(--vt-y, 50%));
+  }
+}
+
+@keyframes themeShrink {
+  from {
+    clip-path: circle(var(--vt-r, 150vmax) at var(--vt-x, 50%) var(--vt-y, 50%));
+  }
+  to {
+    clip-path: circle(0px at var(--vt-x, 50%) var(--vt-y, 50%));
+  }
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+.theme-expand::view-transition-old(root) {
+  z-index: 1;
+}
+
+.theme-expand::view-transition-new(root) {
+  z-index: 9999;
+  animation: themeExpand 280ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.theme-shrink::view-transition-old(root) {
+  z-index: 9999;
+  animation: themeShrink 280ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.theme-shrink::view-transition-new(root) {
+  z-index: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

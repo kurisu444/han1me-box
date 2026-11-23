@@ -12,7 +12,6 @@ import {
   AlertTitle,
   Box,
   Button,
-  CircularProgress,
   Dialog,
   DialogContent,
   DialogTitle,
@@ -34,6 +33,7 @@ import * as keyframes from '../../data/local/keyframe_repository';
 import * as watch from '../../data/local/watch_repository';
 import { parseVideoDuration, type VideoDetail } from '../../domain/models/video';
 import { useConfirmation } from '../shared/use_confirmation';
+import { LoadingIndicator } from '../shared/loading_indicator';
 import { PlayerControls } from './player_controls';
 import { usePlayerChrome } from './player_window';
 import { usePlayerKeyboard } from './use_player_keyboard';
@@ -636,15 +636,9 @@ export function VideoPlayerPanel({ video, onNext }: { video: VideoDetail; onNext
           }}
         />
         {buffering && !playbackError && (
-          <CircularProgress
-            size={40}
-            thickness={3.5}
-            sx={{
-              position: 'absolute',
-              color: 'rgba(255, 255, 255, 0.85)',
-              pointerEvents: 'none',
-            }}
-          />
+          <Box sx={{ position: 'absolute', pointerEvents: 'none' }}>
+            <LoadingIndicator size="lg" color="rgba(255, 255, 255, 0.9)" />
+          </Box>
         )}
         <Fade in={Boolean(frameNotice)} timeout={{ enter: 180, exit: 320 }} unmountOnExit>
           <Box

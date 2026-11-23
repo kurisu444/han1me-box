@@ -160,6 +160,14 @@ export function InterfaceLayoutSettings() {
 
   return (
     <Stack spacing={3}>
+      <SettingSection title={tr('常规')}>
+        <SwitchRow
+          title={tr('关闭时最小化到托盘')}
+          description={tr('关闭主窗口时隐藏到系统托盘，保持后台下载')}
+          checked={settings.minimizeToTray}
+          onChange={(minimizeToTray) => void save({ minimizeToTray })}
+        />
+      </SettingSection>
       <SettingSection title={tr('首页与导航')}>
         <SwitchRow
           title={tr('首页焦点图')}

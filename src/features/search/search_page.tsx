@@ -26,8 +26,14 @@ import {
   type SearchQuery,
 } from '../../domain/models/search_query';
 import { useAccount } from '../account/account_controller';
-import { LoadingState, RequestError } from '../shared/request_error';
-import { CompactVideoCard, VideoCardTile, VideoCover, VideoGrid } from '../shared/video_card';
+import { RequestError } from '../shared/request_error';
+import {
+  CompactVideoCard,
+  VideoCardTile,
+  VideoCover,
+  VideoGrid,
+  VideoGridSkeleton,
+} from '../shared/video_card';
 import {
   canonicalQuery,
   compactSearchGenre,
@@ -130,7 +136,7 @@ export function SearchPage() {
         onOpenTags={() => setTagsOpen(true)}
         onOpenDate={() => setDateOpen(true)}
       />
-      {isPending && <LoadingState label={tr('正在搜索…')} />}
+      {isPending && <VideoGridSkeleton layout={compact ? 'compact' : 'grid'} />}
       {error && <RequestError error={error} onRetry={refetch} />}
       {!isPending && !error && data && (
         <>

@@ -31,7 +31,8 @@ import {
 import type { VideoCard } from '../../domain/models/video';
 import { useAccount } from '../account/account_controller';
 import { NoticeToast, type NoticeMessage } from '../shared/notice_toast';
-import { LoadingState, RequestError } from '../shared/request_error';
+import { RequestError } from '../shared/request_error';
+import { VideoGridSkeleton } from '../shared/video_card';
 import { useConfirmation } from '../shared/use_confirmation';
 import { invalidateRemoteLibrary, useRemoteLibrary } from './library_page';
 import { BatchManageBar, LibraryVideoGrid } from './library_video_grid';
@@ -187,7 +188,7 @@ export function PlaylistDetailPage() {
   }
 
   if (account && remotePlaylist.isPending && !playlist) {
-    return <LoadingState label={tr('正在加载片单…')} />;
+    return <VideoGridSkeleton count={10} />;
   }
   if (account && remotePlaylist.error && !playlist) {
     return <RequestError error={remotePlaylist.error} onRetry={remotePlaylist.refetch} />;
@@ -384,7 +385,7 @@ export function PlaylistDetailPage() {
       )}
 
       {account && remotePlaylist.isPending ? (
-        <LoadingState label={tr('正在加载片单…')} />
+        <VideoGridSkeleton count={10} />
       ) : account && remotePlaylist.error ? (
         <RequestError error={remotePlaylist.error} onRetry={remotePlaylist.refetch} />
       ) : (

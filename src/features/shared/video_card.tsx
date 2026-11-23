@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import ImageNotSupportedOutlinedIcon from '@mui/icons-material/ImageNotSupportedOutlined';
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
-import { Box, Card, Stack, Typography, useMediaQuery } from '@mui/material';
+import { Box, Skeleton, Stack, Typography, useMediaQuery } from '@mui/material';
 import { Link } from 'react-router-dom';
 import { useI18n } from '../../app/i18n';
 import type { VideoCard } from '../../domain/models/video';
@@ -179,16 +179,13 @@ export function VideoCardTile({
   );
 
   return (
-    <Card
+    <Box
       component="article"
-      elevation={0}
       onClick={onSelect}
       sx={{
         minWidth: 0,
         height: '100%',
         flexShrink: 0,
-        bgcolor: 'transparent',
-        borderRadius: '10px',
         cursor: onSelect ? 'pointer' : undefined,
         '&:hover img': { transform: 'scale(1.03)' },
       }}
@@ -284,7 +281,7 @@ export function VideoCardTile({
             ))}
         </Stack>
       </Box>
-    </Card>
+    </Box>
   );
 }
 
@@ -355,5 +352,36 @@ export function VideoGrid({
     >
       {children}
     </Box>
+  );
+}
+
+export function VideoGridSkeleton({
+  count = 15,
+  layout = 'grid',
+}: {
+  count?: number;
+  layout?: 'grid' | 'compact';
+}) {
+  const aspectRatio = layout === 'compact' ? '3 / 4' : '16 / 9';
+  const slots = Array.from({ length: count }, (_, i) => `skeleton-${i}`);
+  return (
+    <VideoGrid layout={layout}>
+      {slots.map((id) => (
+        <Box key={id}>
+          <Skeleton
+            variant="rounded"
+            animation="wave"
+            sx={{
+              width: '100%',
+              height: 'auto',
+              aspectRatio,
+              borderRadius: '10px',
+            }}
+          />
+          <Skeleton variant="text" animation="wave" width="88%" sx={{ mt: 0.75, fontSize: 13 }} />
+          <Skeleton variant="text" animation="wave" width="52%" sx={{ fontSize: 12 }} />
+        </Box>
+      ))}
+    </VideoGrid>
   );
 }

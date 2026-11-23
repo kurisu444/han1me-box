@@ -40,7 +40,8 @@ export function appTheme(
       },
     },
     typography: {
-      fontFamily: 'Inter, "Noto Sans SC", "Microsoft YaHei", system-ui, sans-serif',
+      fontFamily:
+        '"HarmonyOS Sans SC", Inter, "Noto Sans SC", "Microsoft YaHei", system-ui, sans-serif',
       fontSize: 14 * textScale,
       button: { textTransform: 'none', fontWeight: 600 },
     },
@@ -51,8 +52,8 @@ export function appTheme(
         styleOverrides: {
           root: {
             transition:
-              'background-color 150ms cubic-bezier(0.2, 0, 0, 1), border-color 150ms cubic-bezier(0.2, 0, 0, 1), color 150ms cubic-bezier(0.2, 0, 0, 1), transform 100ms cubic-bezier(0.2, 0, 0, 1)',
-            '&:active:not(:disabled)': { transform: 'scale(0.98)' },
+              'background-color 150ms cubic-bezier(0.2, 0, 0, 1), border-color 150ms cubic-bezier(0.2, 0, 0, 1), color 150ms cubic-bezier(0.2, 0, 0, 1), scale 100ms cubic-bezier(0.2, 0, 0, 1)',
+            '&:active:not(:disabled)': { scale: '0.98' },
           },
         },
       },
@@ -60,8 +61,8 @@ export function appTheme(
         styleOverrides: {
           root: {
             transition:
-              'background-color 150ms cubic-bezier(0.2, 0, 0, 1), color 150ms cubic-bezier(0.2, 0, 0, 1), transform 100ms cubic-bezier(0.2, 0, 0, 1)',
-            '&:active:not(:disabled)': { transform: 'scale(0.94)' },
+              'background-color 150ms cubic-bezier(0.2, 0, 0, 1), color 150ms cubic-bezier(0.2, 0, 0, 1), scale 100ms cubic-bezier(0.2, 0, 0, 1)',
+            '&:active:not(:disabled)': { scale: '0.94' },
           },
         },
       },

@@ -8,9 +8,9 @@ import {
   Box,
   Button,
   ButtonBase,
-  CircularProgress,
   IconButton,
   Paper,
+  Skeleton,
   Stack,
   Tooltip,
   Typography,
@@ -27,8 +27,15 @@ import { createSearchQuery } from '../../domain/models/search_query';
 import type { HomeSection, VideoCard } from '../../domain/models/video';
 import { useAccount } from '../account/account_controller';
 import { compactSearchGenre } from '../search/search_controller';
-import { LoadingState, RequestError } from '../shared/request_error';
-import { CompactVideoCard, VideoCardTile, VideoCover, VideoGrid } from '../shared/video_card';
+import { LoadingIndicator } from '../shared/loading_indicator';
+import { RequestError } from '../shared/request_error';
+import {
+  CompactVideoCard,
+  VideoCardTile,
+  VideoCover,
+  VideoGrid,
+  VideoGridSkeleton,
+} from '../shared/video_card';
 import { homeVideoVisible } from '../video/video_helpers';
 import { resolvedExploreChannels, type ExploreChannel } from './explore_channels';
 import { ExploreTopBar } from './explore_top_bar';
@@ -59,8 +66,6 @@ function HeroCarousel({ videos }: { videos: VideoCard[] }) {
     return null;
   }
 
-  const meta = [current.artist, current.views].filter(Boolean).join(' · ');
-
   return (
     <Box
       component="section"
@@ -75,62 +80,75 @@ function HeroCarousel({ videos }: { videos: VideoCard[] }) {
         bgcolor: 'action.hover',
       }}
     >
-      <Box
-        component={Link}
-        to={`/video/${encodeURIComponent(current.id)}`}
-        sx={{
-          display: 'block',
-          width: '100%',
-          height: '100%',
-          textDecoration: 'none',
-          color: '#fff',
-          position: 'relative',
-        }}
-      >
-        <VideoCover key={current.coverUrl} url={current.coverUrl} title={current.title} eager />
-        <Box
-          sx={{
-            position: 'absolute',
-            inset: 0,
-            background:
-              'linear-gradient(to top, rgba(0, 0, 0, 0.84) 0%, rgba(0, 0, 0, 0.25) 48%, transparent 100%)',
-          }}
-        />
-        <Box
-          sx={{
-            position: 'absolute',
-            left: { xs: 16, sm: 24 },
-            right: { xs: 16, sm: 200 },
-            bottom: { xs: 14, sm: 20 },
-          }}
-        >
-          <Typography
-            variant="h5"
-            noWrap
+      {videos.map((item, slideIndex) => {
+        const active = slideIndex === activeIndex;
+        const slideMeta = [item.artist, item.views].filter(Boolean).join(' · ');
+        return (
+          <Box
+            key={item.id}
+            component={Link}
+            to={`/video/${encodeURIComponent(item.id)}`}
+            aria-hidden={!active}
+            tabIndex={active ? 0 : -1}
             sx={{
-              fontWeight: 800,
-              fontStyle: 'italic',
-              fontSize: { xs: '1.1rem', sm: '1.35rem' },
-              textShadow: '0 2px 10px rgba(0, 0, 0, 0.6)',
+              position: 'absolute',
+              inset: 0,
+              display: 'block',
+              width: '100%',
+              height: '100%',
+              textDecoration: 'none',
+              color: '#fff',
+              opacity: active ? 1 : 0,
+              pointerEvents: active ? 'auto' : 'none',
+              transition: 'opacity 320ms ease',
             }}
           >
-            {current.title}
-          </Typography>
-          {meta && (
-            <Typography
-              variant="body2"
-              noWrap
+            <VideoCover url={item.coverUrl} title={item.title} eager />
+            <Box
               sx={{
-                mt: 0.4,
-                color: 'rgba(255, 255, 255, 0.82)',
-                fontSize: 13,
+                position: 'absolute',
+                inset: 0,
+                background:
+                  'linear-gradient(to top, rgba(0, 0, 0, 0.84) 0%, rgba(0, 0, 0, 0.25) 48%, transparent 100%)',
+              }}
+            />
+            <Box
+              sx={{
+                position: 'absolute',
+                left: { xs: 16, sm: 24 },
+                right: { xs: 16, sm: 200 },
+                bottom: { xs: 14, sm: 20 },
               }}
             >
-              {meta}
-            </Typography>
-          )}
-        </Box>
-      </Box>
+              <Typography
+                variant="h5"
+                noWrap
+                sx={{
+                  fontWeight: 800,
+                  fontStyle: 'italic',
+                  fontSize: { xs: '1.1rem', sm: '1.35rem' },
+                  textShadow: '0 2px 10px rgba(0, 0, 0, 0.6)',
+                }}
+              >
+                {item.title}
+              </Typography>
+              {slideMeta && (
+                <Typography
+                  variant="body2"
+                  noWrap
+                  sx={{
+                    mt: 0.4,
+                    color: 'rgba(255, 255, 255, 0.82)',
+                    fontSize: 13,
+                  }}
+                >
+                  {slideMeta}
+                </Typography>
+              )}
+            </Box>
+          </Box>
+        );
+      })}
       {count > 1 && (
         <Stack
           direction="row"
@@ -334,8 +352,25 @@ export function ExplorePage() {
         activeChannelId={channel.id}
         onSelectChannel={selectChannel}
       />
-      {heroVideos.length > 0 && <HeroCarousel key={heroVideos[0]?.id} videos={heroVideos} />}
-      {feedQuery.isPending && !videos.length && <LoadingState label={tr('正在加载首页…')} />}
+      {heroVideos.length > 0 ? (
+        <HeroCarousel key={heroVideos[0]?.id} videos={heroVideos} />
+      ) : (
+        settings.showHomeFeatured &&
+        (homeQuery.isPending || feedQuery.isPending) && (
+          <Skeleton
+            variant="rounded"
+            animation="wave"
+            sx={{
+              mb: 3,
+              height: { xs: 200, sm: 230, md: 260 },
+              borderRadius: '12px',
+            }}
+          />
+        )
+      )}
+      {feedQuery.isPending && !videos.length && (
+        <VideoGridSkeleton layout={compact ? 'compact' : 'grid'} />
+      )}
       {feedQuery.isError && !videos.length && (
         <RequestError error={feedQuery.error} onRetry={() => void feedQuery.refetch()} />
       )}
@@ -357,8 +392,12 @@ export function ExplorePage() {
       )}
       <Box ref={loadMoreRef} sx={{ py: 3, display: 'flex', justifyContent: 'center' }}>
         {feedQuery.isFetchingNextPage && (
-          <Stack direction="row" spacing={1} sx={{ alignItems: 'center', color: 'text.secondary' }}>
-            <CircularProgress size={18} />
+          <Stack
+            direction="row"
+            spacing={1.25}
+            sx={{ alignItems: 'center', color: 'text.secondary' }}
+          >
+            <LoadingIndicator size="sm" />
             <Typography variant="body2">{tr('正在加载更多…')}</Typography>
           </Stack>
         )}

@@ -9,9 +9,27 @@ import { useI18n } from '../../app/i18n';
 
 export { TITLE_BAR_HEIGHT } from '../../core/window_layout';
 
+export function useWindowFocused() {
+  const [focused, setFocused] = useState(() => document.hasFocus());
+
+  useEffect(() => {
+    const onFocus = () => setFocused(true);
+    const onBlur = () => setFocused(false);
+    window.addEventListener('focus', onFocus);
+    window.addEventListener('blur', onBlur);
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      window.removeEventListener('blur', onBlur);
+    };
+  }, []);
+
+  return focused;
+}
+
 export function TitleBar() {
   const tr = useI18n();
   const [maximized, setMaximized] = useState(false);
+  const focused = useWindowFocused();
 
   useEffect(() => {
     const unsubscribe = window.electron.window.onMaximized(setMaximized);
@@ -36,8 +54,28 @@ export function TitleBar() {
         WebkitAppRegion: 'drag',
       }}
     >
-      <Box component="img" src={logo} alt="" sx={{ width: 18, height: 18, mx: 1.5 }} />
-      <Typography sx={{ fontSize: 13, flexGrow: 1 }}>Han1meBox</Typography>
+      <Box
+        component="img"
+        src={logo}
+        alt=""
+        sx={{
+          width: 18,
+          height: 18,
+          mx: 1.5,
+          opacity: focused ? 1 : 0.55,
+          transition: 'opacity 150ms ease',
+        }}
+      />
+      <Typography
+        sx={{
+          fontSize: 13,
+          flexGrow: 1,
+          opacity: focused ? 1 : 0.55,
+          transition: 'opacity 150ms ease',
+        }}
+      >
+        Han1meBox
+      </Typography>
       <Box
         sx={{
           display: 'flex',

@@ -1,6 +1,7 @@
 import { app, BrowserWindow, type WebContents } from 'electron';
 import { join } from 'node:path';
 import type { PlaylistQueue, VideoDetail } from '../src/domain/models/video';
+import { getSettings } from './store';
 
 export interface PlayerOpenPayload {
   id: string;
@@ -10,8 +11,13 @@ export interface PlayerOpenPayload {
 
 let mainWindow: BrowserWindow | undefined;
 let playerWindow: BrowserWindow | undefined;
+let quitting = false;
 const pendingLocalVideos = new Map<string, VideoDetail>();
 const pendingQueues = new Map<string, PlaylistQueue>();
+
+export function markQuitting(): void {
+  quitting = true;
+}
 
 function bindWindowEvents(win: BrowserWindow) {
   const publishMaximized = () => win.webContents.send('window:maximized', win.isMaximized());
@@ -49,6 +55,12 @@ export async function createMainWindow(initialRoute?: string): Promise<BrowserWi
     webPreferences: { preload: join(__dirname, 'preload.js') },
   });
   mainWindow = win;
+  win.on('close', (event) => {
+    if (!quitting && getSettings().minimizeToTray) {
+      event.preventDefault();
+      win.hide();
+    }
+  });
   win.on('closed', () => {
     if (mainWindow === win) {
       mainWindow = undefined;

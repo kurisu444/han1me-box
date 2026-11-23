@@ -50,6 +50,18 @@ export function request(
   });
 }
 
+export const GOOGLE_AUTH_USER_AGENT =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:136.0) Gecko/20100101 Firefox/136.0';
+
+export function isGoogleAuthUrl(url: string): boolean {
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    return host === 'accounts.google.com' || host === 'accounts.youtube.com';
+  } catch {
+    return false;
+  }
+}
+
 export function configureUserAgent() {
   const userAgent = app.userAgentFallback.replace(/\s+(?:han1me-box|Electron)\/\S+/g, '');
   app.userAgentFallback = userAgent;
@@ -139,6 +151,15 @@ export function installRequestHeaders(
 ) {
   browserSession.webRequest.onBeforeSendHeaders(async (details, callback) => {
     const headers = details.requestHeaders;
+    if (isGoogleAuthUrl(details.url)) {
+      for (const name of Object.keys(headers)) {
+        const lower = name.toLowerCase();
+        if (lower === 'user-agent' || lower.startsWith('sec-ch-ua')) {
+          delete headers[name];
+        }
+      }
+      headers['User-Agent'] = GOOGLE_AUTH_USER_AGENT;
+    }
     // 主进程网络请求不会自动携带验证窗口取得的分区 Cookie，按 URL 补上。
     if (!details.webContents && /^https?:/.test(details.url)) {
       const [clearance] = await browserSession.cookies.get({

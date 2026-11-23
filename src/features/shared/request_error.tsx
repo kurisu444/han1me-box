@@ -1,9 +1,10 @@
 import { useI18n } from '../../app/i18n';
 import { useState } from 'react';
-import { Alert, AlertTitle, Button, Stack, Typography, CircularProgress } from '@mui/material';
+import { Alert, AlertTitle, Button, Stack, Typography } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import VerifiedUserOutlinedIcon from '@mui/icons-material/VerifiedUserOutlined';
 import { CloudflareChallengeException } from '../../data/remote/han1me_api';
+import { LoadingIndicator } from './loading_indicator';
 
 export function RequestError({ error, onRetry }: { error: Error; onRetry: () => void }) {
   const tr = useI18n();
@@ -81,9 +82,11 @@ export function RequestError({ error, onRetry }: { error: Error; onRetry: () => 
 
 export function LoadingState({ label }: { label: string }) {
   return (
-    <Stack role="status" spacing={2} sx={{ alignItems: 'center', py: 6 }}>
-      <CircularProgress size={28} aria-label={label} />
-      <Typography color="text.secondary">{label}</Typography>
+    <Stack role="status" spacing={1.5} sx={{ alignItems: 'center', py: 6 }}>
+      <LoadingIndicator size="md" label={label} />
+      <Typography variant="body2" color="text.secondary">
+        {label}
+      </Typography>
     </Stack>
   );
 }

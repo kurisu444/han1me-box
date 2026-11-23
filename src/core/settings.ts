@@ -64,6 +64,7 @@ export interface AppSettings {
   downloadPath: string;
   concurrentDownloads: number;
   downloadSpeedLimitMbps: number;
+  minimizeToTray: boolean;
 }
 
 export function createAppSettings(values: Partial<AppSettings> = {}): AppSettings {
@@ -117,6 +118,7 @@ export function createAppSettings(values: Partial<AppSettings> = {}): AppSetting
     downloadPath: '',
     concurrentDownloads: 2,
     downloadSpeedLimitMbps: 0,
+    minimizeToTray: false,
     ...values,
   };
 }

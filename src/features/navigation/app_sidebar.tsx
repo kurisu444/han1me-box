@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react';
+import type { MouseEvent, ReactNode } from 'react';
+import { flushSync } from 'react-dom';
 import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined';
 import DarkModeOutlinedIcon from '@mui/icons-material/DarkModeOutlined';
 import LightModeOutlinedIcon from '@mui/icons-material/LightModeOutlined';
@@ -32,6 +33,8 @@ const previewsItem: NavItem = {
 
 const topItems: NavItem[] = [mainBranches[0], previewsItem];
 const bottomItems: NavItem[] = [mainBranches[1], mainBranches[2], mainBranches[3]];
+
+let themeTransitionSeq = 0;
 
 export function AppSidebar() {
   const tr = useI18n();
@@ -134,6 +137,40 @@ export function AppSidebar() {
 
   const themeToggleLabel = tr(isDark ? '浅色模式' : '深色模式');
 
+  function toggleTheme(event: MouseEvent<HTMLElement>) {
+    const nextMode = isDark ? 'light' : 'dark';
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduceMotion || typeof document.startViewTransition !== 'function') {
+      void saveSettings({ themeMode: nextMode });
+      return;
+    }
+    const rect = event.currentTarget.getBoundingClientRect();
+    const x = rect.left + rect.width / 2;
+    const y = rect.top + rect.height / 2;
+    const endRadius = Math.hypot(
+      Math.max(x, window.innerWidth - x),
+      Math.max(y, window.innerHeight - y),
+    );
+    const toLight = isDark;
+    const root = document.documentElement;
+    const seq = ++themeTransitionSeq;
+    root.style.setProperty('--vt-x', `${x}px`);
+    root.style.setProperty('--vt-y', `${y}px`);
+    root.style.setProperty('--vt-r', `${endRadius}px`);
+    root.classList.toggle('theme-shrink', toLight);
+    root.classList.toggle('theme-expand', !toLight);
+    const transition = document.startViewTransition(() => {
+      flushSync(() => {
+        void saveSettings({ themeMode: nextMode });
+      });
+    });
+    void transition.finished.finally(() => {
+      if (themeTransitionSeq === seq) {
+        root.classList.remove('theme-shrink', 'theme-expand');
+      }
+    });
+  }
+
   return (
     <Box
       component="aside"
@@ -158,7 +195,7 @@ export function AppSidebar() {
         {bottomItems.slice(0, -1).map((item) => renderNavItem(item, true))}
         <Tooltip title={themeToggleLabel} placement="right">
           <ListItemButton
-            onClick={() => void saveSettings({ themeMode: isDark ? 'light' : 'dark' })}
+            onClick={toggleTheme}
             aria-label={themeToggleLabel}
             sx={{
               mx: 1,

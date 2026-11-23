@@ -23,6 +23,7 @@ import { queryClient } from '../../data/han1me_repository';
 import type { PlaylistQueue, VideoDetail } from '../../domain/models/video';
 import { AccountProvider } from '../account/account_controller';
 import { WebsitePanel } from '../account/website_panel';
+import { useWindowFocused } from '../navigation/title_bar';
 import { LoadingState } from '../shared/request_error';
 import { VideoPage } from './video_page';
 
@@ -65,6 +66,7 @@ function PlayerTitleBar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { videoTitle } = usePlayerChrome();
+  const focused = useWindowFocused();
   const [maximized, setMaximized] = useState(false);
   const [alwaysOnTop, setAlwaysOnTop] = useState(false);
   const [historyState, setHistoryState] = useState({ idx: 0, max: 0 });
@@ -176,6 +178,8 @@ function PlayerTitleBar() {
           textAlign: 'center',
           px: 2,
           color: 'text.primary',
+          opacity: focused ? 1 : 0.55,
+          transition: 'opacity 150ms ease',
         }}
       >
         {videoTitle || 'Han1meBox'}
