@@ -196,7 +196,7 @@ export function CommentsList({
   const settings = useSettings();
   const baseUrl = useMemo(() => resolvedBaseUrl(settings), [settings]);
   const { account, ready } = useAccount();
-  const [localSort, setLocalSort] = useState<CommentSort>('latest');
+  const [localSort, setLocalSort] = useState<CommentSort>('mostLikes');
   const [sortAnchor, setSortAnchor] = useState<HTMLElement | null>(null);
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const {
