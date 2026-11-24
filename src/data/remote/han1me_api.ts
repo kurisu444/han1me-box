@@ -244,10 +244,12 @@ export function parseHome(document: Document, baseUrl: string): HomeFeed {
   const banner = document.querySelector('#home-banner-wrapper');
   const title = text(banner?.querySelector('h1'));
   const meta = text(banner?.querySelector('h4'))?.split('•');
-  const coverUrl = absolute(
-    baseUrl,
-    document.querySelector('div[style*="aspect-ratio"] img')?.getAttribute('src'),
-  );
+  const bannerImages = banner?.previousElementSibling?.querySelectorAll('img');
+  const bannerImage =
+    bannerImages?.[1] ??
+    bannerImages?.[0] ??
+    document.querySelector('div[style*="aspect-ratio"] img');
+  const coverUrl = absolute(baseUrl, bannerImage?.getAttribute('src'));
   return {
     sections,
     featured: title

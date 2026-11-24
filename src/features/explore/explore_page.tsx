@@ -74,10 +74,11 @@ function HeroCarousel({ videos }: { videos: VideoCard[] }) {
       sx={{
         position: 'relative',
         mb: 3,
-        height: { xs: 200, sm: 230, md: 260 },
-        borderRadius: '12px',
+        height: { xs: 184, sm: 204, md: 220 },
+        borderRadius: '14px',
         overflow: 'hidden',
-        bgcolor: 'action.hover',
+        bgcolor: '#111116',
+        border: '1px solid rgba(255, 255, 255, 0.08)',
       }}
     >
       {videos.map((item, slideIndex) => {
@@ -93,7 +94,11 @@ function HeroCarousel({ videos }: { videos: VideoCard[] }) {
             sx={{
               position: 'absolute',
               inset: 0,
-              display: 'block',
+              display: 'flex',
+              alignItems: 'center',
+              gap: { xs: 0, sm: 3 },
+              px: { xs: 2.25, sm: 3.5 },
+              py: { xs: 2, sm: 2.5 },
               width: '100%',
               height: '100%',
               textDecoration: 'none',
@@ -103,31 +108,55 @@ function HeroCarousel({ videos }: { videos: VideoCard[] }) {
               transition: 'opacity 320ms ease',
             }}
           >
-            <VideoCover url={item.coverUrl} title={item.title} eager />
             <Box
+              aria-hidden
               sx={{
                 position: 'absolute',
                 inset: 0,
-                background:
-                  'linear-gradient(to top, rgba(0, 0, 0, 0.84) 0%, rgba(0, 0, 0, 0.25) 48%, transparent 100%)',
+                overflow: 'hidden',
+                pointerEvents: 'none',
+                '& img': {
+                  filter: { xs: 'none', sm: 'blur(28px) saturate(1.25)' },
+                  transform: { xs: 'none', sm: 'scale(1.16)' },
+                  opacity: { xs: 1, sm: 0.68 },
+                },
+              }}
+            >
+              <VideoCover url={item.coverUrl} title={item.title} eager />
+            </Box>
+            <Box
+              aria-hidden
+              sx={{
+                position: 'absolute',
+                inset: 0,
+                pointerEvents: 'none',
+                background: {
+                  xs: 'linear-gradient(to top, rgba(0, 0, 0, 0.86) 0%, rgba(0, 0, 0, 0.28) 52%, transparent 100%)',
+                  sm: 'linear-gradient(95deg, rgba(12, 12, 18, 0.86) 0%, rgba(12, 12, 18, 0.56) 58%, rgba(12, 12, 18, 0.34) 100%)',
+                },
               }}
             />
             <Box
               sx={{
-                position: 'absolute',
-                left: { xs: 16, sm: 24 },
-                right: { xs: 16, sm: 200 },
-                bottom: { xs: 14, sm: 20 },
+                position: 'relative',
+                zIndex: 1,
+                flex: 1,
+                minWidth: 0,
+                alignSelf: { xs: 'flex-end', sm: 'center' },
+                pb: { xs: count > 1 ? 3.75 : 0, sm: count > 1 ? 3.5 : 0 },
               }}
             >
               <Typography
                 variant="h5"
-                noWrap
                 sx={{
                   fontWeight: 800,
-                  fontStyle: 'italic',
-                  fontSize: { xs: '1.1rem', sm: '1.35rem' },
-                  textShadow: '0 2px 10px rgba(0, 0, 0, 0.6)',
+                  fontSize: { xs: '1.05rem', sm: '1.25rem', md: '1.4rem' },
+                  lineHeight: 1.35,
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden',
+                  textShadow: '0 2px 12px rgba(0, 0, 0, 0.55)',
                 }}
               >
                 {item.title}
@@ -137,14 +166,32 @@ function HeroCarousel({ videos }: { videos: VideoCard[] }) {
                   variant="body2"
                   noWrap
                   sx={{
-                    mt: 0.4,
-                    color: 'rgba(255, 255, 255, 0.82)',
+                    mt: 0.75,
+                    color: 'rgba(255, 255, 255, 0.78)',
                     fontSize: 13,
                   }}
                 >
                   {slideMeta}
                 </Typography>
               )}
+            </Box>
+            <Box
+              sx={{
+                position: 'relative',
+                zIndex: 1,
+                display: { xs: 'none', sm: 'block' },
+                height: '100%',
+                aspectRatio: '16 / 9',
+                maxWidth: { sm: 320, md: 380 },
+                flexShrink: 0,
+                borderRadius: '10px',
+                overflow: 'hidden',
+                bgcolor: 'rgba(0, 0, 0, 0.35)',
+                border: '1px solid rgba(255, 255, 255, 0.14)',
+                boxShadow: '0 10px 28px rgba(0, 0, 0, 0.45)',
+              }}
+            >
+              <VideoCover url={item.coverUrl} title={item.title} eager />
             </Box>
           </Box>
         );
@@ -155,8 +202,9 @@ function HeroCarousel({ videos }: { videos: VideoCard[] }) {
           spacing={1.25}
           sx={{
             position: 'absolute',
-            right: 16,
-            bottom: 16,
+            left: { xs: 18, sm: 28 },
+            bottom: 14,
+            zIndex: 2,
             alignItems: 'center',
           }}
         >
