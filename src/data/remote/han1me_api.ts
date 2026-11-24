@@ -550,42 +550,76 @@ function commentFields(
   };
 }
 
-export function parseComments(document: Document, baseUrl: string): CommentPage {
-  const children = Array.from(document.querySelector('#comment-start')?.children ?? []);
-  const comments: Comment[] = [];
-  for (let index = 0; index < children.length; index += 4) {
-    const wrapper = document.createElement('div');
-    wrapper.append(...children.slice(index, index + 4).map((element) => element.cloneNode(true)));
-    if (wrapper.querySelectorAll('.comment-index-text').length < 2) {
-      continue;
-    }
-    const fields = commentFields(wrapper, wrapper, baseUrl);
-    if (!fields.username || !fields.content) {
-      continue;
-    }
-    const replyText = Array.from(
-      wrapper.querySelectorAll('div.load-replies-btn'),
-      (element) => element.textContent,
-    ).join(' ');
-    const replyWrapperId = wrapper
-      .querySelector('div[id^="reply-section-wrapper"]')
-      ?.id.split('-')
-      .at(-1);
-    const id = replyWrapperId || `${fields.username}_${javaStringHash(fields.content)}`;
-    const hasReplyButton = wrapper.querySelector('div[class^="load-replies-btn"]') !== null;
-    comments.push({
-      ...fields,
-      id,
-      likeCount: text(wrapper.querySelectorAll('#comment-like-form-wrapper span[style]')[1]),
-      replyCount: integer(/\d+/.exec(replyText)?.[0]),
-      hasMoreReplies: hasReplyButton && Boolean(replyWrapperId),
-    });
+function parseCommentBlock(wrapper: Element, baseUrl: string): Comment | undefined {
+  if (wrapper.querySelectorAll('.comment-index-text').length < 2) {
+    return undefined;
   }
+  const fields = commentFields(wrapper, wrapper, baseUrl);
+  if (!fields.username || !fields.content) {
+    return undefined;
+  }
+  const replyText = Array.from(
+    wrapper.querySelectorAll('div.load-replies-btn'),
+    (element) => element.textContent,
+  ).join(' ');
+  const dataCommentId = wrapper.getAttribute('data-comment-id')?.trim();
+  const replyWrapperId = wrapper
+    .querySelector('div[id^="reply-section-wrapper"]')
+    ?.id.split('-')
+    .at(-1);
+  const resolvedId = dataCommentId || replyWrapperId;
+  const id = resolvedId || `${fields.username}_${javaStringHash(fields.content)}`;
+  const hasReplyButton = wrapper.querySelector('div[class^="load-replies-btn"]') !== null;
+  return {
+    ...fields,
+    id,
+    likeCount: text(wrapper.querySelectorAll('#comment-like-form-wrapper span[style]')[1]),
+    replyCount: integer(/\d+/.exec(replyText)?.[0]),
+    hasMoreReplies: hasReplyButton && Boolean(resolvedId),
+  };
+}
+
+export function parseComments(document: Document, baseUrl: string): CommentPage {
+  const modernBlocks = Array.from(document.querySelectorAll('#comment-start .comment-item-block'));
+  const fragmentBlocks =
+    modernBlocks.length > 0
+      ? modernBlocks
+      : Array.from(document.querySelectorAll('.comment-item-block'));
+
+  const comments: Comment[] = [];
+  if (fragmentBlocks.length > 0) {
+    for (const block of fragmentBlocks) {
+      const parsed = parseCommentBlock(block, baseUrl);
+      if (parsed) {
+        comments.push(parsed);
+      }
+    }
+  } else {
+    // 兼容旧版结构：每 4 个兄弟节点为一条评论。
+    const children = Array.from(document.querySelector('#comment-start')?.children ?? []);
+    for (let index = 0; index < children.length; index += 4) {
+      const wrapper = document.createElement('div');
+      wrapper.append(...children.slice(index, index + 4).map((element) => element.cloneNode(true)));
+      const parsed = parseCommentBlock(wrapper, baseUrl);
+      if (parsed) {
+        comments.push(parsed);
+      }
+    }
+  }
+
+  const sentinel = document.querySelector('#comment-scroll-sentinel');
+  const hasMore = sentinel?.getAttribute('data-has-more') === '1';
+  const rawNextOffset = sentinel?.getAttribute('data-next-offset');
+  const nextOffset =
+    rawNextOffset != null && /^\d+$/.test(rawNextOffset) ? Number(rawNextOffset) : undefined;
+
   return {
     comments,
     csrfToken: document.querySelector('input[name="_token"]')?.getAttribute('value') ?? undefined,
     currentUserId:
       document.querySelector('input[name="comment-user-id"]')?.getAttribute('value') ?? undefined,
+    hasMore,
+    nextOffset,
   };
 }
 
@@ -594,15 +628,35 @@ const ajaxHeaders = {
   Accept: 'application/json, text/javascript, */*; q=0.01',
 };
 
-export async function comments(baseUrl: string, id: string, type = 'video'): Promise<CommentPage> {
-  const url = `${siteEndpointUrl(baseUrl, 'loadComment')}?${new URLSearchParams({ type, id })}`;
+export async function comments(
+  baseUrl: string,
+  id: string,
+  type = 'video',
+  offset?: number,
+): Promise<CommentPage> {
+  const params = new URLSearchParams({ type, id });
+  if (offset != null) {
+    params.set('offset', String(offset));
+  }
+  const url = `${siteEndpointUrl(baseUrl, 'loadComment')}?${params}`;
   const referer = siteEndpointUrl(baseUrl, `watch?v=${encodeURIComponent(id)}`);
   const response = await http.get(url, { ...ajaxHeaders, Referer: referer });
   checkResponse(response, referer);
-  // 原接口可能返回 HTML，也可能返回包含 comments HTML 的 JSON。
+  // 首屏返回 { comments: html }，后续 offset 翻页返回 { items_html, has_more, next_offset }。
   let body = response.body;
   try {
     const decoded = JSON.parse(body);
+    if (typeof decoded?.items_html === 'string') {
+      const page = parseComments(parseDocument(decoded.items_html), response.url);
+      return {
+        ...page,
+        hasMore: Boolean(decoded.has_more),
+        nextOffset:
+          typeof decoded.next_offset === 'number' && decoded.next_offset >= 0
+            ? decoded.next_offset
+            : undefined,
+      };
+    }
     if (typeof decoded?.comments === 'string') {
       body = decoded.comments;
     }

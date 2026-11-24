@@ -1,4 +1,4 @@
-import { QueryClient, queryOptions } from '@tanstack/react-query';
+import { infiniteQueryOptions, QueryClient, queryOptions } from '@tanstack/react-query';
 import type { SearchQuery } from '../domain/models/search_query';
 import { readHomeCache, writeHomeCache } from './local/home_cache';
 import * as accountApi from './remote/account_api';
@@ -19,8 +19,8 @@ export const queryClient = new QueryClient({
       refetchOnWindowFocus: false,
       refetchOnReconnect: false,
       networkMode: 'always',
-      staleTime: 0,
-      gcTime: 5 * 60 * 1000,
+      staleTime: Number.POSITIVE_INFINITY,
+      gcTime: 3 * 60 * 60 * 1000,
     },
   },
 });
@@ -28,8 +28,6 @@ export const queryClient = new QueryClient({
 export const home = (baseUrl: string, accountId?: string, preferCache = false) =>
   queryOptions({
     queryKey: ['han1me', 'home', baseUrl, accountId],
-    staleTime: 10 * 60 * 1000,
-    gcTime: 30 * 60 * 1000,
     queryFn: async ({ queryKey }) => {
       const cached = await readHomeCache(baseUrl, accountId);
       if (cached) {
@@ -62,8 +60,17 @@ export const comments = (baseUrl: string, id: string, type = 'video', accountId?
     queryFn: () => api.comments(baseUrl, id, type),
     retry: shouldRetryTransient,
     retryDelay: (attempt) => 600 * (attempt + 1),
-    staleTime: 600000,
-    gcTime: 600000,
+  });
+
+export const commentsInfinite = (baseUrl: string, id: string, type = 'video', accountId?: string) =>
+  infiniteQueryOptions({
+    queryKey: ['han1me', 'comments-infinite', baseUrl, type, id, accountId],
+    initialPageParam: undefined as number | undefined,
+    queryFn: ({ pageParam }) => api.comments(baseUrl, id, type, pageParam),
+    getNextPageParam: (lastPage) =>
+      lastPage.hasMore && lastPage.nextOffset != null ? lastPage.nextOffset : undefined,
+    retry: shouldRetryTransient,
+    retryDelay: (attempt) => 600 * (attempt + 1),
   });
 
 export const replies = (baseUrl: string, id: string) =>

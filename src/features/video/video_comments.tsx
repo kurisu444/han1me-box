@@ -1,4 +1,4 @@
-import { useMemo, useState, type MouseEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import RefreshIcon from '@mui/icons-material/Refresh';
@@ -15,13 +15,14 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { useI18n } from '../../app/i18n';
 import { useSettings } from '../../app/settings_context';
 import { resolvedBaseUrl } from '../../core/settings';
 import * as repository from '../../data/han1me_repository';
 import type { Comment, VideoDetail } from '../../domain/models/video';
 import { useAccount } from '../account/account_controller';
+import { LoadingIndicator } from '../shared/loading_indicator';
 import { LoadingState, RequestError } from '../shared/request_error';
 import { CommentActions, CommentActionsContext, CommentComposer } from './comment_actions';
 import { visibleComments, type CommentSort } from './video_helpers';
@@ -197,13 +198,57 @@ export function CommentsList({
   const { account, ready } = useAccount();
   const [localSort, setLocalSort] = useState<CommentSort>('latest');
   const [sortAnchor, setSortAnchor] = useState<HTMLElement | null>(null);
-  const { data, error, isPending, refetch } = useQuery({
-    ...repository.comments(baseUrl, id, type, account?.id),
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+  const {
+    data,
+    error,
+    isPending,
+    refetch,
+    hasNextPage,
+    isFetchingNextPage,
+    isFetchNextPageError,
+    fetchNextPage,
+  } = useInfiniteQuery({
+    ...repository.commentsInfinite(baseUrl, id, type, account?.id),
     enabled: ready !== false,
   });
 
+  useEffect(() => {
+    const sentinel = loadMoreRef.current;
+    if (!sentinel || !hasNextPage || isFetchingNextPage) {
+      return;
+    }
+    const root = sentinel.closest('#comments-panel');
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          void fetchNextPage();
+        }
+      },
+      { root, rootMargin: '240px' },
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
   const sort = selectedSort ?? localSort;
-  const comments = visibleComments(data?.comments ?? [], settings, sort);
+  const allComments = useMemo(() => {
+    const seen = new Set<string>();
+    const list: Comment[] = [];
+    for (const page of data?.pages ?? []) {
+      for (const item of page.comments) {
+        if (!item.id || !seen.has(item.id)) {
+          if (item.id) {
+            seen.add(item.id);
+          }
+          list.push(item);
+        }
+      }
+    }
+    return list;
+  }, [data]);
+  const comments = visibleComments(allComments, settings, sort);
+  const firstPage = data?.pages[0];
 
   function openSortMenu(event: MouseEvent<HTMLElement>) {
     setSortAnchor(event.currentTarget);
@@ -220,15 +265,15 @@ export function CommentsList({
   if (isPending) {
     return <LoadingState label={tr('正在加载评论…')} />;
   }
-  if (error) {
+  if (error && !data) {
     return <RequestError error={error} onRetry={refetch} />;
   }
 
   return (
     <CommentActionsContext
       value={{
-        token: data?.csrfToken ?? '',
-        userId: data?.currentUserId ?? '',
+        token: firstPage?.csrfToken ?? '',
+        userId: firstPage?.currentUserId ?? '',
         reload: refetch,
       }}
     >
@@ -287,9 +332,33 @@ export function CommentsList({
         <CommentComposer targetId={id} type={type} />
       </Stack>
       {comments.length ? (
-        comments.map((comment, index) => (
-          <CommentCard key={`${comment.id}-${index}`} comment={comment} />
-        ))
+        <>
+          {comments.map((comment, index) => (
+            <CommentCard key={`${comment.id}-${index}`} comment={comment} />
+          ))}
+          <Box ref={loadMoreRef} sx={{ py: 2, display: 'flex', justifyContent: 'center' }}>
+            {isFetchingNextPage && (
+              <Stack
+                direction="row"
+                spacing={1.25}
+                sx={{ alignItems: 'center', color: 'text.secondary' }}
+              >
+                <LoadingIndicator size="sm" />
+                <Typography variant="body2">{tr('正在加载更多…')}</Typography>
+              </Stack>
+            )}
+            {isFetchNextPageError && (
+              <Button variant="outlined" size="small" onClick={() => void fetchNextPage()}>
+                {tr('重试')}
+              </Button>
+            )}
+            {!hasNextPage && !isFetchingNextPage && (
+              <Typography variant="caption" color="text.secondary">
+                {tr('已经到底了')}
+              </Typography>
+            )}
+          </Box>
+        </>
       ) : (
         <Alert severity="info" sx={{ mt: 1.5 }}>
           {tr('暂无可显示的评论。')}

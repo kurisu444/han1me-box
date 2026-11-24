@@ -127,6 +127,8 @@ export interface CommentPage {
   totalCount?: string;
   csrfToken?: string;
   currentUserId?: string;
+  hasMore?: boolean;
+  nextOffset?: number;
 }
 
 export interface VideoTranslation {
