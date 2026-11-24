@@ -1,15 +1,18 @@
 import { useState, type MouseEvent, type RefObject } from 'react';
+import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
+import PlayArrowRoundedIcon from '@mui/icons-material/PlayArrowRounded';
 import {
-  Button,
+  Box,
   Dialog,
   DialogContent,
   DialogTitle,
+  IconButton,
   List,
   ListItem,
-  ListItemText,
   Menu,
   MenuItem,
   Stack,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
@@ -20,6 +23,16 @@ import type { VideoDetail } from '../../../domain/models/video';
 import * as keyframes from '../../../data/local/keyframe_repository';
 import { useConfirmation } from '../../shared/use_confirmation';
 import type { NoticeMessage } from '../../shared/notice_toast';
+
+function formatKeyframeTime(positionMs: number): string {
+  const totalSeconds = Math.max(0, Math.floor(positionMs / 1000));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  const mm = String(minutes).padStart(2, '0');
+  const ss = String(seconds).padStart(2, '0');
+  return hours > 0 ? `${hours}:${mm}:${ss}` : `${mm}:${ss}`;
+}
 
 export const aspectLabels: Record<AppSettings['videoAspectRatio'], string> = {
   auto: '自动',
@@ -71,9 +84,7 @@ export function usePlayerMenus(
       return;
     }
     const position = Math.round(element.currentTime * 1000);
-    if (
-      !(await confirmation.confirm(tr('将 {0} 秒添加为关键帧？', (position / 1000).toFixed(1))))
-    ) {
+    if (!(await confirmation.confirm(tr('将 {0} 添加为关键帧？', formatKeyframeTime(position))))) {
       return;
     }
     const added = await keyframes.add(video.id, position, video.title);
@@ -85,6 +96,9 @@ export function usePlayerMenus(
   }
 
   async function removeKeyframe(position: number) {
+    if (!(await confirmation.confirm(tr('删除 {0} 处的关键帧？', formatKeyframeTime(position))))) {
+      return;
+    }
     await keyframes.remove(video.id, position);
     void frames.refetch();
   }
@@ -222,27 +236,58 @@ export function PlayerMenus({
         <DialogTitle>{tr('关键帧')}</DialogTitle>
         <DialogContent>
           {frames.data?.length ? (
-            <List dense>
+            <List dense disablePadding>
               {frames.data.map((position) => (
                 <ListItem
                   key={position}
+                  disableGutters
+                  sx={{
+                    px: 1.25,
+                    py: 0.75,
+                    borderRadius: '10px',
+                    '&:hover': { bgcolor: 'action.hover' },
+                  }}
                   secondaryAction={
                     <Stack direction="row" spacing={0.5}>
-                      <Button size="small" onClick={() => jumpToKeyframe(position)}>
-                        {tr('跳转')}
-                      </Button>
-                      <Button size="small" color="error" onClick={() => removeKeyframe(position)}>
-                        {tr('删除')}
-                      </Button>
+                      <Tooltip title={tr('跳转')}>
+                        <IconButton
+                          size="small"
+                          color="primary"
+                          aria-label={tr('跳转')}
+                          onClick={() => jumpToKeyframe(position)}
+                        >
+                          <PlayArrowRoundedIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title={tr('删除')}>
+                        <IconButton
+                          size="small"
+                          color="error"
+                          aria-label={tr('删除')}
+                          onClick={() => removeKeyframe(position)}
+                        >
+                          <DeleteOutlineRoundedIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
                     </Stack>
                   }
                 >
-                  <ListItemText primary={tr('{0} 秒', (position / 1000).toFixed(1))} />
+                  <Box
+                    component="span"
+                    sx={{
+                      fontSize: 13.5,
+                      fontWeight: 600,
+                      fontVariantNumeric: 'tabular-nums',
+                      color: 'text.primary',
+                    }}
+                  >
+                    {formatKeyframeTime(position)}
+                  </Box>
                 </ListItem>
               ))}
             </List>
           ) : (
-            <Typography variant="body2" color="text.secondary" sx={{ py: 1 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ py: 3, textAlign: 'center' }}>
               {tr('暂无关键帧')}
             </Typography>
           )}

@@ -83,6 +83,7 @@ export function ComicsPage({
     enabled: tab === 'home',
   });
   const saved = useQuery({ queryKey: ['comic-library'], queryFn: store.loadLibrary });
+  const [filterOpen, setFilterOpen] = useState(false);
   const [filter, setFilter] = useState('');
 
   const basePath = path.replace(/\/popular(?:-today|-week)?$/, '');
@@ -92,7 +93,7 @@ export function ComicsPage({
     setParams({
       path: basePath + value,
     });
-    setFilter('');
+    setFilterOpen(false);
   }
 
   function changePage(_event: unknown, page: number) {
@@ -155,11 +156,14 @@ export function ComicsPage({
                       ? `${name}: ${params.get('label')}`
                       : name
                 }
-                onClick={() => setFilter(name)}
+                onClick={() => {
+                  setFilter(name);
+                  setFilterOpen(true);
+                }}
               />
             ))}
           </Stack>
-          <Dialog open={!!filter} onClose={() => setFilter('')}>
+          <Dialog open={filterOpen} onClose={() => setFilterOpen(false)}>
             <DialogTitle>{filter === 'sort' ? tr('排序') : filter}</DialogTitle>
             <DialogContent>
               <List>
@@ -212,20 +216,25 @@ export function ComicDetailPage() {
   const [expandedTags, setExpandedTags] = useState(false);
   const [cacheNotice, setCacheNotice] = useState<NoticeMessage | null>(null);
   const confirmation = useConfirmation();
+  const [categoriesOpen, setCategoriesOpen] = useState(false);
   const [categories, setCategories] = useState<string[]>([]);
 
   async function chooseCategory() {
     if (!(await confirmation.confirm(tr('缓存此漫画的全部图片？')))) {
       return;
     }
-    setCategories(await window.electron.comics.categories());
+    const next = await window.electron.comics.categories();
+    setCategories(next);
+    if (next.length > 0) {
+      setCategoriesOpen(true);
+    }
   }
 
   async function cacheComic(category: string) {
     if (!resource.data) {
       return;
     }
-    setCategories([]);
+    setCategoriesOpen(false);
     setCacheNotice({ id: Date.now(), text: tr('正在缓存…') });
     try {
       await window.electron.comics.cache(resource.data, category);
@@ -274,7 +283,7 @@ export function ComicDetailPage() {
       <Button onClick={chooseCategory}>{tr('下载漫画')}</Button>
       <NoticeToast notice={cacheNotice} onClose={() => setCacheNotice(null)} />
       {confirmation.dialog}
-      <Dialog open={categories.length > 0} onClose={() => setCategories([])}>
+      <Dialog open={categoriesOpen} onClose={() => setCategoriesOpen(false)}>
         <DialogTitle>{tr('缓存分类')}</DialogTitle>
         <DialogContent>
           {categories.map((category) => (

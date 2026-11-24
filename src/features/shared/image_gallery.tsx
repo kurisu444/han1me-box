@@ -16,11 +16,13 @@ import {
 } from '@mui/material';
 export function ImageGallery({ title, images }: { title: string; images: string[] }) {
   const tr = useI18n();
-  const [index, setIndex] = useState<number>();
+  const [open, setOpen] = useState(false);
+  const [index, setIndex] = useState(0);
   const transform = useRef<ReactZoomPanPinchRef>(null);
 
   function select(value: number) {
     setIndex(value);
+    setOpen(true);
   }
 
   function toggleZoom() {
@@ -62,14 +64,9 @@ export function ImageGallery({ title, images }: { title: string; images: string[
           </Button>
         ))}
       </Stack>
-      <Dialog
-        open={index !== undefined}
-        onClose={() => setIndex(undefined)}
-        maxWidth="lg"
-        fullWidth
-      >
+      <Dialog open={open} onClose={() => setOpen(false)} maxWidth="lg" fullWidth>
         <DialogTitle>
-          {title} · {(index ?? 0) + 1}/{images.length}
+          {title} · {index + 1}/{images.length}
         </DialogTitle>
         <DialogContent
           sx={{
@@ -83,7 +80,7 @@ export function ImageGallery({ title, images }: { title: string; images: string[
             >
               <Box
                 component="img"
-                src={images[index ?? 0]}
+                src={images[index]}
                 alt={title}
                 sx={{ maxWidth: '100%', maxHeight: '70vh', objectFit: 'contain' }}
               />
@@ -91,14 +88,14 @@ export function ImageGallery({ title, images }: { title: string; images: string[
           </TransformWrapper>
         </DialogContent>
         <DialogActions>
-          <Button disabled={!index} onClick={() => select(index! - 1)}>
+          <Button disabled={index <= 0} onClick={() => select(index - 1)}>
             {tr('上一张')}
           </Button>
-          <Button disabled={index === images.length - 1} onClick={() => select(index! + 1)}>
+          <Button disabled={index >= images.length - 1} onClick={() => select(index + 1)}>
             {tr('下一张')}
           </Button>
           <Button onClick={toggleZoom}>{tr('缩放')}</Button>
-          <Button onClick={() => setIndex(undefined)}>{tr('关闭')}</Button>
+          <Button onClick={() => setOpen(false)}>{tr('关闭')}</Button>
         </DialogActions>
       </Dialog>
     </>

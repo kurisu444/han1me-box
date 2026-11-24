@@ -79,7 +79,73 @@ export function appTheme(
       MuiDialog: {
         styleOverrides: {
           root: { top: 'var(--titlebar-height)' },
-          paper: { maxHeight: 'calc(100% - 48px)' },
+          paper: {
+            maxHeight: 'calc(100% - 48px)',
+            borderRadius: 16,
+            backgroundImage: 'none',
+            backgroundColor: amoled ? '#0c0b10' : mode === 'dark' ? '#1c1723' : '#ffffff',
+            border: `1px solid ${mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)'}`,
+            boxShadow:
+              mode === 'dark'
+                ? '0 24px 56px rgba(0, 0, 0, 0.62)'
+                : '0 20px 48px rgba(15, 10, 25, 0.16)',
+          },
+        },
+        defaultProps: {
+          slotProps: {
+            backdrop: {
+              sx: {
+                backgroundColor: mode === 'dark' ? 'rgba(0, 0, 0, 0.6)' : 'rgba(15, 10, 25, 0.32)',
+                backdropFilter: 'blur(4px)',
+              },
+            },
+          },
+        },
+      },
+      MuiDialogTitle: {
+        styleOverrides: {
+          root: {
+            fontSize: '1.02rem',
+            fontWeight: 700,
+            padding: '18px 22px 10px',
+          },
+        },
+      },
+      MuiDialogContent: {
+        styleOverrides: {
+          root: {
+            padding: '8px 22px 16px',
+            fontSize: '0.92rem',
+          },
+        },
+      },
+      MuiDialogActions: {
+        styleOverrides: {
+          root: {
+            padding: '8px 22px 18px',
+            gap: 8,
+          },
+        },
+      },
+      MuiListItemButton: {
+        styleOverrides: {
+          root: {
+            borderRadius: 10,
+          },
+        },
+      },
+      MuiMenu: {
+        styleOverrides: {
+          paper: {
+            borderRadius: 12,
+            backgroundImage: 'none',
+            backgroundColor: amoled ? '#0e0d12' : mode === 'dark' ? '#201a28' : '#ffffff',
+            border: `1px solid ${mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)'}`,
+            boxShadow:
+              mode === 'dark'
+                ? '0 14px 36px rgba(0, 0, 0, 0.55)'
+                : '0 10px 28px rgba(15, 10, 25, 0.12)',
+          },
         },
       },
     },
