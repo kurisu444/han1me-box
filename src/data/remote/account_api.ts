@@ -26,6 +26,8 @@ async function document(url: string) {
   const result = await documentWithBody(url);
   return result.document;
 }
+const latestCsrfTokens = new Map<string, string>();
+
 const tokenFrom = (page: Document) =>
   page.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ??
   page.querySelector('input[name="_token"]')?.getAttribute('value') ??
@@ -43,13 +45,16 @@ async function csrfToken(baseUrl: string, fresh = false) {
     return undefined;
   }
   rememberOrigin(url.href, response.url);
-  return (
-    tokenFrom(new DOMParser().parseFromString(response.body, 'text/html'))?.trim() || undefined
-  );
+  const parsed =
+    tokenFrom(new DOMParser().parseFromString(response.body, 'text/html'))?.trim() || undefined;
+  if (parsed) {
+    latestCsrfTokens.set(new URL(response.url).origin, parsed);
+  }
+  return parsed;
 }
 async function form(url: string, data: Record<string, string>, token: string) {
   let origin = originFor(url);
-  let currentToken = token || (await csrfToken(origin)) || '';
+  let currentToken = latestCsrfTokens.get(origin) || token || (await csrfToken(origin)) || '';
   async function submit() {
     origin = originFor(origin);
     const target = new URL(url);
@@ -223,7 +228,7 @@ export const deletePlaylist = (base: string, token: string, id: string) =>
   updatePlaylist(base, token, id, '', '', true);
 export async function removePlaylistItem(base: string, token: string, id: string) {
   const origin = originFor(base);
-  let currentToken = token || (await csrfToken(origin)) || '';
+  let currentToken = latestCsrfTokens.get(origin) || token || (await csrfToken(origin)) || '';
   const submit = () =>
     http.request(
       `${origin}/playlist/items/${id}`,
@@ -244,7 +249,7 @@ export async function removePlaylistItem(base: string, token: string, id: string
 }
 export async function deleteHistory(base: string, token: string, id: string) {
   const origin = originFor(base);
-  let currentToken = token || (await csrfToken(origin)) || '';
+  let currentToken = latestCsrfTokens.get(origin) || token || (await csrfToken(origin)) || '';
   const submit = () =>
     http.request(
       `${origin}/user/tab-item/${id}`,

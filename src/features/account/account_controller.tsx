@@ -54,6 +54,11 @@ export function AccountProvider({
       setAccounts(await store.readAllAccounts(base));
       if (saved?.cookie) {
         const clean = { ...saved, cookie: withoutClearance(saved.cookie) };
+        if (!syncRemote) {
+          setAccount(clean);
+          setLoadedBase(base);
+          return;
+        }
         await window.electron.session.importCookies(base, clean.cookie);
         if (clean.cookie !== saved.cookie) {
           await store.writeAccount(base, clean);
@@ -63,9 +68,6 @@ export function AccountProvider({
         }
         setAccount(clean);
         setLoadedBase(base);
-        if (!syncRemote) {
-          return;
-        }
         try {
           const profile = {
             ...(await queryClient.fetchQuery(api.account(base))),

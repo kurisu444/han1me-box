@@ -154,15 +154,21 @@ export async function cookies(url: string): Promise<string> {
 }
 
 export async function importCookies(url: string, value: string): Promise<void> {
+  const targets = candidateUrls(url);
   for (const part of value.split(';')) {
     const index = part.indexOf('=');
     if (index < 1) {
       continue;
     }
+    const name = part.slice(0, index).trim();
+    const cookieValue = part.slice(index + 1).trim();
+    for (const target of targets) {
+      await session.defaultSession.cookies.remove(target, name).catch(() => {});
+    }
     await session.defaultSession.cookies.set({
       url,
-      name: part.slice(0, index).trim(),
-      value: part.slice(index + 1).trim(),
+      name,
+      value: cookieValue,
       path: '/',
     });
   }

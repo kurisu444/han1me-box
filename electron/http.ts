@@ -15,7 +15,12 @@ export function request(
   charset = 'utf-8',
 ): Promise<Han1meHttpResponse> {
   return new Promise((resolve, reject) => {
-    const req = net.request({ url, method, credentials: 'include' });
+    const req = net.request({
+      url,
+      method,
+      credentials: 'include',
+      origin: new URL(url).origin,
+    });
     let finalUrl = url;
     for (const [name, value] of Object.entries(headers)) {
       req.setHeader(name, value);
@@ -160,18 +165,28 @@ export function installRequestHeaders(
       }
       headers['User-Agent'] = GOOGLE_AUTH_USER_AGENT;
     }
-    // 主进程网络请求不会自动携带验证窗口取得的分区 Cookie，按 URL 补上。
+    // 主进程网络请求不会自动携带分区 Cookie 或跨站上下文下的 SameSite=Lax 会话 Cookie，按 URL 补齐。
     if (!details.webContents && /^https?:/.test(details.url)) {
-      const [clearance] = await browserSession.cookies.get({
-        url: details.url,
-        name: 'cf_clearance',
-      });
-      if (clearance) {
-        const name = Object.keys(headers).find((key) => key.toLowerCase() === 'cookie') || 'Cookie';
-        const cookies = (headers[name] || '')
-          .split(/;\s*/)
-          .filter((cookie) => cookie && !cookie.startsWith('cf_clearance='));
-        headers[name] = [...cookies, `cf_clearance=${clearance.value}`].join('; ');
+      const stored = await browserSession.cookies.get({ url: details.url });
+      if (stored.length > 0) {
+        const headerName =
+          Object.keys(headers).find((key) => key.toLowerCase() === 'cookie') || 'Cookie';
+        const merged = new Map<string, string>();
+        for (const part of (headers[headerName] || '').split(/;\s*/)) {
+          const eq = part.indexOf('=');
+          if (eq > 0) {
+            merged.set(part.slice(0, eq), part.slice(eq + 1));
+          }
+        }
+        for (const cookie of stored) {
+          if (cookie.name) {
+            merged.delete(cookie.name);
+            merged.set(cookie.name, cookie.value);
+          }
+        }
+        headers[headerName] = [...merged.entries()]
+          .map(([name, value]) => `${name}=${value}`)
+          .join('; ');
       }
     }
     const target =

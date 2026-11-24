@@ -39,7 +39,9 @@ function setup() {
     cookies: {
       async get({ url, name }) {
         reads.push({ url, name });
-        return url.startsWith('https://example.com/') ? [{ value: 'verified' }] : [];
+        return url.startsWith('https://example.com/')
+          ? [{ name: 'cf_clearance', value: 'verified' }]
+          : [];
       },
     },
     webRequest: {
@@ -75,7 +77,7 @@ test('Main requests include clearance missing from Chromium automatic cookies', 
     requestHeaders: { Cookie: 'session=present' },
   });
   assert.equal(headers.Cookie, 'session=present; cf_clearance=verified');
-  assert.deepEqual(app.reads, [{ url: 'https://example.com/', name: 'cf_clearance' }]);
+  assert.deepEqual(app.reads, [{ url: 'https://example.com/', name: undefined }]);
 });
 
 test('Clearance is read for each request URL and existing clearance is replaced once', async () => {
