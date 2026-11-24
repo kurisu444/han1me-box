@@ -239,21 +239,20 @@ export function VideoPlayerPanel({ video, onNext }: { video: VideoDetail; onNext
   }, [video.id, video.title, video.coverUrl, video.duration, sourceUrl === '']);
 
   useEffect(() => {
+    if (!settings.autoPictureInPicture) {
+      return;
+    }
     async function visibilityChanged() {
       const element = player.current;
       if (!document.hidden || !element || element.paused) {
         return;
       }
-      if (document.pictureInPictureElement === element) {
+      if (document.pictureInPictureElement === element || !document.pictureInPictureEnabled) {
         return;
       }
-      if (settings.autoPictureInPicture && document.pictureInPictureEnabled) {
-        try {
-          await element.requestPictureInPicture();
-          return;
-        } catch {}
-      }
-      element.pause();
+      try {
+        await element.requestPictureInPicture();
+      } catch {}
     }
 
     document.addEventListener('visibilitychange', visibilityChanged);
@@ -575,6 +574,7 @@ export function VideoPlayerPanel({ video, onNext }: { video: VideoDetail; onNext
       }}
     >
       <Box
+        onMouseDown={() => (document.activeElement as HTMLElement | null)?.blur()}
         onClick={togglePlay}
         onDoubleClick={toggleFullscreen}
         sx={{

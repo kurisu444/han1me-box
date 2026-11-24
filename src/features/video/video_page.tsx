@@ -145,103 +145,123 @@ export function VideoDetailView({
       <Box
         component="aside"
         id="video-sidebar"
+        aria-hidden={!sidebarOpen}
         sx={{
-          width: 360,
+          width: sidebarOpen ? 360 : 0,
           flexShrink: 0,
           height: '100%',
-          display: sidebarOpen ? 'flex' : 'none',
-          flexDirection: 'column',
+          display: 'flex',
+          overflow: 'hidden',
+          visibility: sidebarOpen ? 'visible' : 'hidden',
           bgcolor: 'background.paper',
-          borderLeft: 1,
+          borderLeft: sidebarOpen ? 1 : 0,
           borderColor: 'divider',
           minHeight: 0,
           '@media (max-width:860px)': {
             width: '100%',
-            flex: 1,
-            height: 'auto',
+            flex: sidebarOpen ? 1 : 0,
+            height: sidebarOpen ? 'auto' : 0,
             borderLeft: 0,
-            borderTop: 1,
+            borderTop: sidebarOpen ? 1 : 0,
           },
         }}
       >
-        <Stack
-          direction="row"
+        <Box
           sx={{
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            px: 1.5,
-            borderBottom: 1,
-            borderColor: 'divider',
+            width: 360,
             flexShrink: 0,
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            minHeight: 0,
+            '@media (max-width:860px)': {
+              width: '100%',
+            },
           }}
         >
-          <Tabs
-            value={activeTab}
-            onChange={changeTab}
-            aria-label={tr('视频信息')}
+          <Stack
+            direction="row"
             sx={{
-              minHeight: 44,
-              '& .MuiTab-root': {
-                minHeight: 44,
-                minWidth: 64,
-                px: 1.5,
-                py: 0.75,
-                fontSize: 13.5,
-              },
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              px: 1.5,
+              borderBottom: 1,
+              borderColor: 'divider',
+              flexShrink: 0,
             }}
           >
-            <Tab id="details-tab" value="details" label={tr('简介')} aria-controls="video-info" />
-            {settings.commentsEnabled && (
+            <Tabs
+              value={activeTab}
+              onChange={changeTab}
+              aria-label={tr('视频信息')}
+              sx={{
+                minHeight: 44,
+                '& .MuiTab-root': {
+                  minHeight: 44,
+                  minWidth: 64,
+                  px: 1.5,
+                  py: 0.75,
+                  fontSize: 13.5,
+                },
+              }}
+            >
               <Tab
-                id="comments-tab"
-                value="comments"
-                aria-controls="video-info"
-                label={
-                  <Stack direction="row" spacing={0.75} sx={{ alignItems: 'center' }}>
-                    <span>{tr('评论')}</span>
-                    {video.commentCount !== undefined && (
-                      <Box
-                        component="span"
-                        sx={{
-                          px: 0.75,
-                          py: 0.1,
-                          borderRadius: 999,
-                          fontSize: 11,
-                          fontWeight: 700,
-                          lineHeight: 1.4,
-                          bgcolor: 'primary.main',
-                          color: 'primary.contrastText',
-                        }}
-                      >
-                        {video.commentCount}
-                      </Box>
-                    )}
-                  </Stack>
-                }
+                id="details-tab"
+                value="details"
+                label={tr('简介')}
+                aria-controls="details-panel"
               />
+              {settings.commentsEnabled && (
+                <Tab
+                  id="comments-tab"
+                  value="comments"
+                  aria-controls="comments-panel"
+                  label={
+                    <Stack direction="row" spacing={0.75} sx={{ alignItems: 'center' }}>
+                      <span>{tr('评论')}</span>
+                      {video.commentCount !== undefined && (
+                        <Box
+                          component="span"
+                          sx={{
+                            px: 0.75,
+                            py: 0.1,
+                            borderRadius: 999,
+                            fontSize: 11,
+                            fontWeight: 700,
+                            lineHeight: 1.4,
+                            bgcolor: 'primary.main',
+                            color: 'primary.contrastText',
+                          }}
+                        >
+                          {video.commentCount}
+                        </Box>
+                      )}
+                    </Stack>
+                  }
+                />
+              )}
+            </Tabs>
+            {onRefresh && (
+              <Tooltip title={tr('刷新详情')}>
+                <IconButton size="small" aria-label={tr('刷新详情')} onClick={onRefresh}>
+                  <RefreshIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
             )}
-          </Tabs>
-          {onRefresh && (
-            <Tooltip title={tr('刷新详情')}>
-              <IconButton size="small" aria-label={tr('刷新详情')} onClick={onRefresh}>
-                <RefreshIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-          )}
-        </Stack>
-        <Box
-          id="video-info"
-          role="tabpanel"
-          aria-labelledby={`${activeTab}-tab`}
-          sx={{
-            flex: 1,
-            minHeight: 0,
-            overflowY: 'auto',
-            px: 2,
-            py: 2,
-          }}
-        >
-          <Box hidden={activeTab !== 'details'}>
+          </Stack>
+          <Box
+            id="details-panel"
+            role="tabpanel"
+            aria-labelledby="details-tab"
+            hidden={activeTab !== 'details'}
+            sx={{
+              flex: 1,
+              minHeight: 0,
+              overflowY: 'auto',
+              px: 2,
+              py: 2,
+            }}
+          >
             {offlineNotice && (
               <Alert severity="info" sx={{ mb: 2 }}>
                 {tr('无法获取在线资料，正在使用离线视频信息')}
@@ -256,7 +276,19 @@ export function VideoDetailView({
             />
           </Box>
           {commentsVisited && (
-            <Box hidden={activeTab !== 'comments'}>
+            <Box
+              id="comments-panel"
+              role="tabpanel"
+              aria-labelledby="comments-tab"
+              hidden={activeTab !== 'comments'}
+              sx={{
+                flex: 1,
+                minHeight: 0,
+                overflowY: 'auto',
+                px: 2,
+                py: 2,
+              }}
+            >
               <VideoComments key={video.id} video={video} />
             </Box>
           )}

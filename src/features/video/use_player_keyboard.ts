@@ -104,6 +104,7 @@ export function usePlayerKeyboard(
           return;
       }
       event.preventDefault();
+      event.stopPropagation();
     }
 
     function up(event: KeyboardEvent) {
@@ -117,12 +118,12 @@ export function usePlayerKeyboard(
       }
     }
 
-    window.addEventListener('keydown', down);
+    window.addEventListener('keydown', down, true);
     window.addEventListener('keyup', up);
     window.addEventListener('blur', release);
     return () => {
       release();
-      window.removeEventListener('keydown', down);
+      window.removeEventListener('keydown', down, true);
       window.removeEventListener('keyup', up);
       window.removeEventListener('blur', release);
     };
