@@ -27,23 +27,23 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { useI18n } from '../../app/i18n';
-import { useSettings } from '../../app/settings_context';
-import { resolvedBaseUrl } from '../../core/settings';
-import { siteEndpointUrl } from '../../core/site_url';
-import * as library from '../../data/local/library_repository';
-import { useLibrary } from '../../data/local/library_repository';
-import * as api from '../../data/remote/account_api';
-import type { VideoDetail } from '../../domain/models/video';
-import { useAccount } from '../account/account_controller';
+import { useI18n } from '../../../app/i18n';
+import { useSettings } from '../../../app/settings_context';
+import { resolvedBaseUrl } from '../../../core/settings';
+import { siteEndpointUrl } from '../../../core/site_url';
+import * as library from '../../../data/local/library_repository';
+import { useLibrary } from '../../../data/local/library_repository';
+import * as api from '../../../data/remote/account_api';
+import type { VideoDetail } from '../../../domain/models/video';
+import { useAccount } from '../../account/account_controller';
 import {
   invalidateRemoteLibrary,
   useRemoteFavorites,
   useRemotePlaylists,
   useRemoteSubscriptions,
-} from '../library/library_page';
-import { NoticeToast, type NoticeMessage } from '../shared/notice_toast';
-import { downloadSource } from './video_helpers';
+} from '../../library/library_page';
+import { NoticeToast, type NoticeMessage } from '../../shared/notice_toast';
+import { downloadSource } from '../video_helpers';
 
 function ActionTile({
   icon,
@@ -199,6 +199,7 @@ export function VideoActions({ video }: { video: VideoDetail }) {
         await library.setFavorite(video, !favorite);
       }
       void invalidateRemoteLibrary('favorites');
+      showNotice(tr(!favorite ? '已收藏' : '已取消收藏'));
     } catch (cause) {
       setFavoriteOverride(favorite);
       setError(String(cause));
@@ -221,6 +222,7 @@ export function VideoActions({ video }: { video: VideoDetail }) {
         await library.saveToPlaylist(video, id);
       }
       void invalidateRemoteLibrary(id === '__watch_later__' ? 'watch-later' : 'playlists');
+      showNotice(tr(id === '__watch_later__' ? '已加入稍后再看' : '已加入片单'));
       setOpen(false);
     } catch (cause) {
       setError(String(cause));
@@ -275,6 +277,7 @@ export function VideoActions({ video }: { video: VideoDetail }) {
         await library.createPlaylistWithVideo(video, title.trim(), description.trim());
       }
       void invalidateRemoteLibrary('playlists');
+      showNotice(tr('已加入片单'));
       setCreating(false);
       setOpen(false);
     } catch (cause) {

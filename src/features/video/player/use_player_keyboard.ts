@@ -1,11 +1,12 @@
 import { useEffect, type RefObject } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useSettings } from '../../app/settings_context';
-import { isPlayerWindow } from './player_window';
+import { useSettings } from '../../../app/settings_context';
+import { isPlayerWindow } from '../player_window';
 
 export function usePlayerKeyboard(
   player: RefObject<HTMLVideoElement | null>,
   exitWideMode?: () => void,
+  onVolumeChange?: (percent: number) => void,
 ) {
   const settings = useSettings();
   const navigate = useNavigate();
@@ -16,8 +17,8 @@ export function usePlayerKeyboard(
     let previousSpeed: number | undefined;
 
     function seek(seconds: number) {
-      const video = player.current!;
-      if (Number.isFinite(video.duration)) {
+      const video = player.current;
+      if (video && Number.isFinite(video.duration)) {
         video.currentTime = Math.max(0, Math.min(video.duration, video.currentTime + seconds));
       }
     }
@@ -46,7 +47,7 @@ export function usePlayerKeyboard(
         return;
       }
       const video = player.current;
-      if (!video || !video.readyState) {
+      if (!video?.readyState) {
         return;
       }
       switch (event.key) {
@@ -65,12 +66,21 @@ export function usePlayerKeyboard(
             }, 450);
           }
           break;
-        case 'ArrowUp':
-          video.volume = Math.min(1, video.volume + 0.1);
+        case 'ArrowUp': {
+          if (video.muted) {
+            video.muted = false;
+          }
+          const next = Math.min(1, Math.round((video.volume + 0.1) * 10) / 10);
+          video.volume = next;
+          onVolumeChange?.(Math.round(next * 100));
           break;
-        case 'ArrowDown':
-          video.volume = Math.max(0, video.volume - 0.1);
+        }
+        case 'ArrowDown': {
+          const next = Math.max(0, Math.round((video.volume - 0.1) * 10) / 10);
+          video.volume = next;
+          onVolumeChange?.(Math.round(next * 100));
           break;
+        }
         case 'f':
         case 'F':
           if (!event.repeat) {
@@ -134,5 +144,6 @@ export function usePlayerKeyboard(
     navigate,
     params,
     exitWideMode,
+    onVolumeChange,
   ]);
 }

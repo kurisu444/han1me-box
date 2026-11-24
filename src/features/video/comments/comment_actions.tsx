@@ -27,14 +27,14 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import reasons from '../../../assets/search_options/report_reason.json';
-import { useI18n } from '../../app/i18n';
-import { useSaveSettings, useSettings } from '../../app/settings_context';
-import { resolvedBaseUrl } from '../../core/settings';
-import * as api from '../../data/remote/account_api';
-import { searchLocale } from '../../data/search_option_catalog';
-import type { Comment } from '../../domain/models/video';
-import { useAccount } from '../account/account_controller';
+import reasons from '../../../../assets/search_options/report_reason.json';
+import { useI18n } from '../../../app/i18n';
+import { useSaveSettings, useSettings } from '../../../app/settings_context';
+import { resolvedBaseUrl } from '../../../core/settings';
+import * as api from '../../../data/remote/account_api';
+import { searchLocale } from '../../../data/search_option_catalog';
+import type { Comment } from '../../../domain/models/video';
+import { useAccount } from '../../account/account_controller';
 
 export const CommentActionsContext = createContext({
   token: '',

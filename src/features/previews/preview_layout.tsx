@@ -7,7 +7,7 @@ import { Box, Button, Drawer, IconButton, Stack, Typography } from '@mui/materia
 import { Link } from 'react-router-dom';
 import { useI18n } from '../../app/i18n';
 import { VideoCover } from '../shared/video_card';
-import { CommentsList } from '../video/video_comments';
+import { CommentsList } from '../video/comments/video_comments';
 import { offsetMonth } from './month_navigation';
 
 export const previewGridSx = {

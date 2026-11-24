@@ -12,7 +12,7 @@ import VolumeDownRoundedIcon from '@mui/icons-material/VolumeDownRounded';
 import VolumeOffRoundedIcon from '@mui/icons-material/VolumeOffRounded';
 import VolumeUpRoundedIcon from '@mui/icons-material/VolumeUpRounded';
 import { Box, Button, IconButton, Slider, Stack, Tooltip, Typography } from '@mui/material';
-import { useI18n } from '../../app/i18n';
+import { useI18n } from '../../../app/i18n';
 
 const barButtonSx = {
   color: 'rgba(255, 255, 255, 0.88)',
@@ -406,7 +406,7 @@ export function PlayerControls({
             </Tooltip>
             <Slider
               size="small"
-              aria-label={tr('静音')}
+              aria-label={tr('音量')}
               min={0}
               max={1}
               step={0.02}

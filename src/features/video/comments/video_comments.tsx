@@ -4,7 +4,6 @@ import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import SortIcon from '@mui/icons-material/Sort';
 import {
-  Alert,
   Avatar,
   Box,
   Button,
@@ -16,16 +15,16 @@ import {
   Typography,
 } from '@mui/material';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
-import { useI18n } from '../../app/i18n';
-import { useSettings } from '../../app/settings_context';
-import { resolvedBaseUrl } from '../../core/settings';
-import * as repository from '../../data/han1me_repository';
-import type { Comment, VideoDetail } from '../../domain/models/video';
-import { useAccount } from '../account/account_controller';
-import { LoadingIndicator } from '../shared/loading_indicator';
-import { LoadingState, RequestError } from '../shared/request_error';
+import { useI18n } from '../../../app/i18n';
+import { useSettings } from '../../../app/settings_context';
+import { resolvedBaseUrl } from '../../../core/settings';
+import * as repository from '../../../data/han1me_repository';
+import type { Comment, VideoDetail } from '../../../domain/models/video';
+import { useAccount } from '../../account/account_controller';
+import { LoadingIndicator } from '../../shared/loading_indicator';
+import { LoadingState, RequestError } from '../../shared/request_error';
 import { CommentActions, CommentActionsContext, CommentComposer } from './comment_actions';
-import { visibleComments, type CommentSort } from './video_helpers';
+import { visibleComments, type CommentSort } from '../video_helpers';
 
 const sortLabels: Record<CommentSort, string> = {
   latest: '最新',
@@ -121,9 +120,9 @@ function Replies({ id }: { id: string }) {
     >
       {replies.length ? (
         <Stack spacing={1.5}>
-          {replies.map((reply, index) => (
+          {replies.map((reply) => (
             <CommentContent
-              key={`${reply.foreignId ?? reply.username}-${index}`}
+              key={reply.id || `${reply.username}-${reply.timeAgo ?? ''}-${reply.content}`}
               comment={reply}
               compact
             />
@@ -155,6 +154,8 @@ function CommentCard({ comment }: { comment: Comment }) {
         py: 1.75,
         borderBottom: 1,
         borderColor: 'divider',
+        contentVisibility: 'auto',
+        containIntrinsicSize: 'auto 88px',
       }}
     >
       <CommentContent comment={comment} />
@@ -260,7 +261,11 @@ export function CommentsList({
   }
 
   if (!settings.commentsEnabled) {
-    return <Alert severity="info">{tr('评论已关闭。')}</Alert>;
+    return (
+      <Typography variant="body2" color="text.secondary" sx={{ py: 4, textAlign: 'center' }}>
+        {tr('评论已关闭。')}
+      </Typography>
+    );
   }
   if (isPending) {
     return <LoadingState label={tr('正在加载评论…')} />;
@@ -333,8 +338,11 @@ export function CommentsList({
       </Stack>
       {comments.length ? (
         <>
-          {comments.map((comment, index) => (
-            <CommentCard key={`${comment.id}-${index}`} comment={comment} />
+          {comments.map((comment) => (
+            <CommentCard
+              key={comment.id || `${comment.username}-${comment.timeAgo ?? ''}-${comment.content}`}
+              comment={comment}
+            />
           ))}
           <Box ref={loadMoreRef} sx={{ py: 2, display: 'flex', justifyContent: 'center' }}>
             {isFetchingNextPage && (
@@ -360,9 +368,9 @@ export function CommentsList({
           </Box>
         </>
       ) : (
-        <Alert severity="info" sx={{ mt: 1.5 }}>
+        <Typography variant="body2" color="text.secondary" sx={{ py: 4, textAlign: 'center' }}>
           {tr('暂无可显示的评论。')}
-        </Alert>
+        </Typography>
       )}
     </CommentActionsContext>
   );

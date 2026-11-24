@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type SyntheticEvent } from 'react';
+import { startTransition, useEffect, useMemo, useState, type SyntheticEvent } from 'react';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import RefreshIcon from '@mui/icons-material/Refresh';
@@ -15,10 +15,214 @@ import type { PlaylistQueue, VideoDetail } from '../../domain/models/video';
 import { useAccount } from '../account/account_controller';
 import { LoadingState, RequestError } from '../shared/request_error';
 import { usePlayerChrome } from './player_window';
-import { VideoComments } from './video_comments';
-import { VideoDetailContent } from './video_detail_content';
+import { VideoComments } from './comments/video_comments';
+import { VideoDetailContent } from './details/video_detail_content';
 import { nextEpisode, relatedVideoVisible } from './video_helpers';
-import { VideoPlayerPanel } from './video_player_panel';
+import { VideoPlayerPanel } from './player/video_player_panel';
+
+function VideoSidebar({
+  video,
+  sidebarOpen,
+  playlistTitle,
+  offlineNotice,
+  onSelectEpisode,
+  onRefresh,
+}: {
+  video: VideoDetail;
+  sidebarOpen: boolean;
+  playlistTitle?: string;
+  offlineNotice: boolean;
+  onSelectEpisode: (id: string) => void;
+  onRefresh?: () => void;
+}) {
+  const tr = useI18n();
+  const settings = useSettings();
+  const { setVideoTitle } = usePlayerChrome();
+  const [translatedTitle, setTranslatedTitle] = useState<string>();
+  const [commentsVisited, setCommentsVisited] = useState(false);
+  const [tab, setTab] = useState<'details' | 'comments'>('details');
+  const [panelTab, setPanelTab] = useState<'details' | 'comments'>('details');
+
+  useEffect(() => {
+    setVideoTitle(translatedTitle ?? video.title);
+    return () => setVideoTitle('');
+  }, [translatedTitle, video.title, setVideoTitle]);
+
+  const activeTab = settings.commentsEnabled ? tab : 'details';
+  const activePanelTab = settings.commentsEnabled ? panelTab : 'details';
+  const related = settings.applyRecommendationFiltersToRelated
+    ? video.related.filter((item) => relatedVideoVisible(item, settings))
+    : video.related;
+
+  function changeTab(_event: SyntheticEvent, value: 'details' | 'comments') {
+    setTab(value);
+    startTransition(() => {
+      setPanelTab(value);
+      if (value === 'comments') {
+        setCommentsVisited(true);
+      }
+    });
+  }
+
+  return (
+    <Box
+      component="aside"
+      id="video-sidebar"
+      aria-hidden={!sidebarOpen}
+      sx={{
+        width: sidebarOpen ? 360 : 0,
+        flexShrink: 0,
+        height: '100%',
+        display: 'flex',
+        overflow: 'hidden',
+        visibility: sidebarOpen ? 'visible' : 'hidden',
+        bgcolor: 'background.paper',
+        borderLeft: sidebarOpen ? 1 : 0,
+        borderColor: 'divider',
+        minHeight: 0,
+        '@media (max-width:860px)': {
+          width: '100%',
+          flex: sidebarOpen ? 1 : 0,
+          height: sidebarOpen ? 'auto' : 0,
+          borderLeft: 0,
+          borderTop: sidebarOpen ? 1 : 0,
+        },
+      }}
+    >
+      <Box
+        sx={{
+          width: 360,
+          flexShrink: 0,
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          minHeight: 0,
+          '@media (max-width:860px)': {
+            width: '100%',
+          },
+        }}
+      >
+        <Stack
+          direction="row"
+          sx={{
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            px: 1.5,
+            borderBottom: 1,
+            borderColor: 'divider',
+            flexShrink: 0,
+          }}
+        >
+          <Tabs
+            value={activeTab}
+            onChange={changeTab}
+            aria-label={tr('视频信息')}
+            sx={{
+              minHeight: 44,
+              '& .MuiTab-root': {
+                minHeight: 44,
+                minWidth: 64,
+                px: 1.5,
+                py: 0.75,
+                fontSize: 13.5,
+              },
+              '& .MuiTabs-indicator': {
+                transition:
+                  'left 180ms cubic-bezier(0.2, 0, 0, 1), width 180ms cubic-bezier(0.2, 0, 0, 1)',
+              },
+            }}
+          >
+            <Tab
+              id="details-tab"
+              value="details"
+              label={tr('简介')}
+              aria-controls="details-panel"
+            />
+            {settings.commentsEnabled && (
+              <Tab
+                id="comments-tab"
+                value="comments"
+                aria-controls="comments-panel"
+                label={
+                  <Stack direction="row" spacing={0.75} sx={{ alignItems: 'center' }}>
+                    <span>{tr('评论')}</span>
+                    {video.commentCount !== undefined && (
+                      <Box
+                        component="span"
+                        sx={{
+                          px: 0.75,
+                          py: 0.1,
+                          borderRadius: 999,
+                          fontSize: 11,
+                          fontWeight: 700,
+                          lineHeight: 1.4,
+                          bgcolor: 'primary.main',
+                          color: 'primary.contrastText',
+                        }}
+                      >
+                        {video.commentCount}
+                      </Box>
+                    )}
+                  </Stack>
+                }
+              />
+            )}
+          </Tabs>
+          {onRefresh && (
+            <Tooltip title={tr('刷新详情')}>
+              <IconButton size="small" aria-label={tr('刷新详情')} onClick={onRefresh}>
+                <RefreshIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
+        </Stack>
+        <Box
+          id="details-panel"
+          role="tabpanel"
+          aria-labelledby="details-tab"
+          hidden={activePanelTab !== 'details'}
+          sx={{
+            flex: 1,
+            minHeight: 0,
+            overflowY: 'auto',
+            px: 2,
+            py: 2,
+          }}
+        >
+          {offlineNotice && (
+            <Alert severity="info" sx={{ mb: 2 }}>
+              {tr('无法获取在线资料，正在使用离线视频信息')}
+            </Alert>
+          )}
+          <VideoDetailContent
+            video={video}
+            related={related}
+            playlistTitle={playlistTitle}
+            onSelectEpisode={onSelectEpisode}
+            onTitleChanged={setTranslatedTitle}
+          />
+        </Box>
+        {commentsVisited && (
+          <Box
+            id="comments-panel"
+            role="tabpanel"
+            aria-labelledby="comments-tab"
+            hidden={activePanelTab !== 'comments'}
+            sx={{
+              flex: 1,
+              minHeight: 0,
+              overflowY: 'auto',
+              px: 2,
+              py: 2,
+            }}
+          >
+            <VideoComments key={video.id} video={video} />
+          </Box>
+        )}
+      </Box>
+    </Box>
+  );
+}
 
 export function VideoDetailView({
   video,
@@ -32,32 +236,15 @@ export function VideoDetailView({
   onRefresh?: () => void;
 }) {
   const tr = useI18n();
-  const settings = useSettings();
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const { sidebarOpen, toggleSidebar, setVideoTitle } = usePlayerChrome();
-  const [translatedTitle, setTranslatedTitle] = useState<string>();
-  const [commentsVisited, setCommentsVisited] = useState(false);
-  const [tab, setTab] = useState<'details' | 'comments'>('details');
+  const { sidebarOpen, toggleSidebar } = usePlayerChrome();
 
   useEffect(() => {
     void addSubscriptionVideo(video);
   }, [video]);
 
-  useEffect(() => {
-    setVideoTitle(translatedTitle ?? video.title);
-    return () => setVideoTitle('');
-  }, [translatedTitle, video.title, setVideoTitle]);
-
-  const activeTab = settings.commentsEnabled ? tab : 'details';
   const next = nextEpisode(video);
-  const related = settings.applyRecommendationFiltersToRelated
-    ? video.related.filter((item) => relatedVideoVisible(item, settings))
-    : video.related;
-
-  function playNext() {
-    switchEpisode(next!.id);
-  }
 
   function switchEpisode(id: string) {
     if (!id || id === video.id) {
@@ -68,13 +255,6 @@ export function VideoDetailView({
     navigate(`/video/${encodeURIComponent(id)}${query}`, {
       state: queue ? { queue } : undefined,
     });
-  }
-
-  function changeTab(_event: SyntheticEvent, value: 'details' | 'comments') {
-    setTab(value);
-    if (value === 'comments') {
-      setCommentsVisited(true);
-    }
   }
 
   return (
@@ -105,7 +285,7 @@ export function VideoDetailView({
           },
         }}
       >
-        <VideoPlayerPanel video={video} onNext={next ? playNext : undefined} />
+        <VideoPlayerPanel video={video} onNext={next ? () => switchEpisode(next.id) : undefined} />
         <IconButton
           disableRipple
           aria-label={tr(sidebarOpen ? '收起信息栏' : '展开信息栏')}
@@ -142,158 +322,14 @@ export function VideoDetailView({
           {sidebarOpen ? <ChevronRightIcon /> : <ChevronLeftIcon />}
         </IconButton>
       </Box>
-      <Box
-        component="aside"
-        id="video-sidebar"
-        aria-hidden={!sidebarOpen}
-        sx={{
-          width: sidebarOpen ? 360 : 0,
-          flexShrink: 0,
-          height: '100%',
-          display: 'flex',
-          overflow: 'hidden',
-          visibility: sidebarOpen ? 'visible' : 'hidden',
-          bgcolor: 'background.paper',
-          borderLeft: sidebarOpen ? 1 : 0,
-          borderColor: 'divider',
-          minHeight: 0,
-          '@media (max-width:860px)': {
-            width: '100%',
-            flex: sidebarOpen ? 1 : 0,
-            height: sidebarOpen ? 'auto' : 0,
-            borderLeft: 0,
-            borderTop: sidebarOpen ? 1 : 0,
-          },
-        }}
-      >
-        <Box
-          sx={{
-            width: 360,
-            flexShrink: 0,
-            height: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            minHeight: 0,
-            '@media (max-width:860px)': {
-              width: '100%',
-            },
-          }}
-        >
-          <Stack
-            direction="row"
-            sx={{
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              px: 1.5,
-              borderBottom: 1,
-              borderColor: 'divider',
-              flexShrink: 0,
-            }}
-          >
-            <Tabs
-              value={activeTab}
-              onChange={changeTab}
-              aria-label={tr('视频信息')}
-              sx={{
-                minHeight: 44,
-                '& .MuiTab-root': {
-                  minHeight: 44,
-                  minWidth: 64,
-                  px: 1.5,
-                  py: 0.75,
-                  fontSize: 13.5,
-                },
-              }}
-            >
-              <Tab
-                id="details-tab"
-                value="details"
-                label={tr('简介')}
-                aria-controls="details-panel"
-              />
-              {settings.commentsEnabled && (
-                <Tab
-                  id="comments-tab"
-                  value="comments"
-                  aria-controls="comments-panel"
-                  label={
-                    <Stack direction="row" spacing={0.75} sx={{ alignItems: 'center' }}>
-                      <span>{tr('评论')}</span>
-                      {video.commentCount !== undefined && (
-                        <Box
-                          component="span"
-                          sx={{
-                            px: 0.75,
-                            py: 0.1,
-                            borderRadius: 999,
-                            fontSize: 11,
-                            fontWeight: 700,
-                            lineHeight: 1.4,
-                            bgcolor: 'primary.main',
-                            color: 'primary.contrastText',
-                          }}
-                        >
-                          {video.commentCount}
-                        </Box>
-                      )}
-                    </Stack>
-                  }
-                />
-              )}
-            </Tabs>
-            {onRefresh && (
-              <Tooltip title={tr('刷新详情')}>
-                <IconButton size="small" aria-label={tr('刷新详情')} onClick={onRefresh}>
-                  <RefreshIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-            )}
-          </Stack>
-          <Box
-            id="details-panel"
-            role="tabpanel"
-            aria-labelledby="details-tab"
-            hidden={activeTab !== 'details'}
-            sx={{
-              flex: 1,
-              minHeight: 0,
-              overflowY: 'auto',
-              px: 2,
-              py: 2,
-            }}
-          >
-            {offlineNotice && (
-              <Alert severity="info" sx={{ mb: 2 }}>
-                {tr('无法获取在线资料，正在使用离线视频信息')}
-              </Alert>
-            )}
-            <VideoDetailContent
-              video={video}
-              related={related}
-              playlistTitle={queue?.title}
-              onSelectEpisode={switchEpisode}
-              onTitleChanged={setTranslatedTitle}
-            />
-          </Box>
-          {commentsVisited && (
-            <Box
-              id="comments-panel"
-              role="tabpanel"
-              aria-labelledby="comments-tab"
-              hidden={activeTab !== 'comments'}
-              sx={{
-                flex: 1,
-                minHeight: 0,
-                overflowY: 'auto',
-                px: 2,
-                py: 2,
-              }}
-            >
-              <VideoComments key={video.id} video={video} />
-            </Box>
-          )}
-        </Box>
-      </Box>
+      <VideoSidebar
+        video={video}
+        sidebarOpen={sidebarOpen}
+        playlistTitle={queue?.title}
+        offlineNotice={offlineNotice}
+        onSelectEpisode={switchEpisode}
+        onRefresh={onRefresh}
+      />
     </Box>
   );
 }
@@ -382,10 +418,14 @@ export function VideoPage({
     );
   }
 
+  if (!detail) {
+    return null;
+  }
+
   return (
     <VideoDetailView
-      key={detail!.id}
-      video={detail!}
+      key={detail.id}
+      video={detail}
       queue={queue}
       offlineNotice={Boolean(localVideo && error)}
       onRefresh={() => void refetch()}

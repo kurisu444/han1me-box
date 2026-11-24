@@ -22,13 +22,13 @@ import {
   Typography,
 } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
-import { useI18n } from '../../app/i18n';
-import { useSettings } from '../../app/settings_context';
-import { resolvedBaseUrl } from '../../core/settings';
-import { translateVideo } from '../../data/remote/google_translate_api';
-import { localizeTag, searchLocale } from '../../data/search_option_catalog';
-import type { VideoCard, VideoDetail, VideoTranslation } from '../../domain/models/video';
-import { CompactVideoCard, VideoCover } from '../shared/video_card';
+import { useI18n } from '../../../app/i18n';
+import { useSettings } from '../../../app/settings_context';
+import { resolvedBaseUrl } from '../../../core/settings';
+import { translateVideo } from '../../../data/remote/google_translate_api';
+import { localizeTag, searchLocale } from '../../../data/search_option_catalog';
+import type { VideoCard, VideoDetail, VideoTranslation } from '../../../domain/models/video';
+import { CompactVideoCard, VideoCover } from '../../shared/video_card';
 import { AuthorSubscribeButton, VideoActions } from './video_actions';
 
 export function VideoDetailContent({
@@ -335,11 +335,11 @@ export function VideoDetailContent({
               pb: 1,
             }}
           >
-            {video.playlist.map((item, index) => {
+            {video.playlist.map((item) => {
               const selected = item.id === video.id;
               return (
                 <Paper
-                  key={`${item.id}-${index}`}
+                  key={item.id}
                   variant="outlined"
                   onClick={() => onSelectEpisode?.(item.id)}
                   sx={{
@@ -427,9 +427,7 @@ export function VideoDetailContent({
         </Typography>
         <Stack spacing={1}>
           {related.length ? (
-            related.map((item, index) => (
-              <CompactVideoCard key={`${item.id}-${index}`} video={item} />
-            ))
+            related.map((item) => <CompactVideoCard key={item.id} video={item} />)
           ) : (
             <Typography variant="body2" color="text.secondary">
               {tr('暂无相关推荐。')}
@@ -444,9 +442,9 @@ export function VideoDetailContent({
         </DialogTitle>
         <DialogContent>
           <Stack spacing={1} sx={{ py: 0.5 }}>
-            {video.playlist.map((item, index) => (
+            {video.playlist.map((item) => (
               <CompactVideoCard
-                key={`${item.id}-${index}`}
+                key={item.id}
                 video={item}
                 selected={item.id === video.id}
                 onSelect={() => selectEpisodeFromDialog(item.id)}
