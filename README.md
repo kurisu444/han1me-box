@@ -5,9 +5,7 @@
 </p>
 
 <p align="center">
-  <b>跨平台非官方第三方桌面客户端（Linux / Windows）</b><br>
-  Linux AppImage · Windows 安装版 / 免安装版 · 本地数据备份<br>
-  <sub>基于 Electron + React + TypeScript 构建 · 源自 Han1mePlus</sub>
+  基于 Electron 构建的 Hanime1 第三方桌面客户端，支持 Linux 和 Windows。
 </p>
 
 <p align="center">
