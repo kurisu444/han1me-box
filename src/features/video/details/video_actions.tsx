@@ -43,6 +43,7 @@ import {
   useRemoteSubscriptions,
 } from '../../library/library_page';
 import { NoticeToast, type NoticeMessage } from '../../shared/notice_toast';
+import { isPlayerWindow } from '../player_window';
 import { downloadSource } from '../video_helpers';
 
 function ActionTile({
@@ -184,6 +185,9 @@ export function VideoActions({ video }: { video: VideoDetail }) {
         }[result],
       );
       setDownloadOpen(false);
+      if (isPlayerWindow()) {
+        void window.electron.player.focusMain('/cache');
+      }
     } catch (cause) {
       setError(String(cause));
     }
