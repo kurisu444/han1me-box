@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Box, Fade, Snackbar } from '@mui/material';
 
 export interface NoticeMessage {
@@ -12,9 +13,14 @@ export function NoticeToast({
   notice: NoticeMessage | null;
   onClose: () => void;
 }) {
+  const [displayedNotice, setDisplayedNotice] = useState(notice);
+  if (notice && notice !== displayedNotice) {
+    setDisplayedNotice(notice);
+  }
+
   return (
     <Snackbar
-      key={notice?.id}
+      key={displayedNotice?.id}
       open={Boolean(notice)}
       autoHideDuration={2400}
       onClose={onClose}
@@ -36,7 +42,7 @@ export function NoticeToast({
           border: '1px solid rgba(255, 255, 255, 0.14)',
         }}
       >
-        {notice?.text}
+        {displayedNotice?.text}
       </Box>
     </Snackbar>
   );

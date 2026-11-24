@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState, type ChangeEvent, type SyntheticEvent } from 'react';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import {
-  Alert,
   Box,
   Button,
   Card,
@@ -163,15 +162,15 @@ export function SearchPage() {
             </Tooltip>
           </Stack>
           <VideoGrid layout={compact ? 'compact' : 'grid'}>
-            {data.items.map((item, index) =>
+            {data.items.map((item) =>
               item.id ? (
                 compact ? (
-                  <CompactVideoCard key={`${item.id}-${index}`} video={item} vertical />
+                  <CompactVideoCard key={item.id} video={item} vertical />
                 ) : (
-                  <VideoCardTile key={`${item.id}-${index}`} video={item} />
+                  <VideoCardTile key={item.id} video={item} />
                 )
               ) : (
-                <Card key={`${item.artistQuery}-${index}`}>
+                <Card key={item.artistQuery ?? item.title}>
                   <CardActionArea
                     onClick={() => update({ text: item.artistQuery ?? item.title, type: '' })}
                     sx={{ height: '100%' }}
@@ -191,7 +190,9 @@ export function SearchPage() {
             )}
           </VideoGrid>
           {data.items.length === 0 && (
-            <Alert severity="info">{tr('没有符合当前条件的结果。')}</Alert>
+            <Typography variant="body2" color="text.secondary" sx={{ py: 4, textAlign: 'center' }}>
+              {tr('没有符合当前条件的结果。')}
+            </Typography>
           )}
           <Stack
             direction="row"

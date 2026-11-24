@@ -1,7 +1,8 @@
+import { NoticeToast, type NoticeMessage } from '../shared/notice_toast';
 import { useState } from 'react';
 import FolderOpenOutlinedIcon from '@mui/icons-material/FolderOpenOutlined';
 import SyncIcon from '@mui/icons-material/Sync';
-import { Alert, Button, Paper, Stack, TextField } from '@mui/material';
+import { Button, Paper, Stack, TextField } from '@mui/material';
 import { useI18n } from '../../app/i18n';
 import { useSaveSettings, useSettings } from '../../app/settings_context';
 import { appSettingsFromJson, type AppSettings } from '../../core/settings';
@@ -17,7 +18,7 @@ export function DataSettings() {
   const settings = useSettings();
   const save = useSaveSettings();
   const [busy, setBusy] = useState(false);
-  const [notice, setNotice] = useState('');
+  const [notice, setNotice] = useState<NoticeMessage | null>(null);
   const [downloadPath, setDownloadPath] = useState(settings.downloadPath);
 
   async function browse() {
@@ -36,12 +37,12 @@ export function DataSettings() {
 
   async function run(action: () => Promise<unknown>) {
     setBusy(true);
-    setNotice('');
+    setNotice(null);
     try {
       await action();
-      setNotice(tr('操作完成'));
+      setNotice({ id: Date.now(), text: tr('操作完成') });
     } catch (error) {
-      setNotice(String(error));
+      setNotice({ id: Date.now(), text: String(error) });
     } finally {
       setBusy(false);
     }
@@ -49,7 +50,7 @@ export function DataSettings() {
 
   async function synchronize() {
     if (!settings.webDavEnabled) {
-      setNotice(tr('WebDAV 未开启'));
+      setNotice({ id: Date.now(), text: tr('WebDAV 未开启') });
       return;
     }
     await run(async () => {
@@ -217,7 +218,7 @@ export function DataSettings() {
         )}
       </SettingSection>
 
-      {notice && <Alert severity="info">{notice}</Alert>}
+      <NoticeToast notice={notice} onClose={() => setNotice(null)} />
     </Stack>
   );
 }

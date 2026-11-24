@@ -1,3 +1,4 @@
+import { NoticeToast, type NoticeMessage } from '../shared/notice_toast';
 import { cardGridSx } from '../shared/video_card';
 import { useMemo, useEffect, useRef, useState } from 'react';
 import {
@@ -5,7 +6,6 @@ import {
   TransformWrapper,
   type ReactZoomPanPinchRef,
 } from 'react-zoom-pan-pinch';
-import { useSettings } from '../../app/settings_context';
 import { useI18n } from '../../app/i18n';
 import { useConfirmation } from '../shared/use_confirmation';
 import {
@@ -15,7 +15,6 @@ import {
   List,
   ListItemButton,
   ListItemText,
-  Alert,
   Tabs,
   Tab,
   Box,
@@ -70,7 +69,6 @@ export function ComicsPage({
   libraryOnly?: boolean;
 }) {
   const tr = useI18n();
-  const settings = useSettings();
   const [params, setParams] = useSearchParams();
   const { path, page } = useMemo(
     () => ({
@@ -207,12 +205,12 @@ export function ComicsPage({
 }
 export function ComicDetailPage() {
   const tr = useI18n();
-  const { id } = useParams();
-  const resource = useQuery(api.detailQuery(id!));
+  const { id = '' } = useParams();
+  const resource = useQuery(api.detailQuery(id));
   const saved = useQuery({ queryKey: ['comic-library'], queryFn: store.loadLibrary });
   const [reading, setReading] = useState(false);
   const [expandedTags, setExpandedTags] = useState(false);
-  const [cacheNotice, setCacheNotice] = useState('');
+  const [cacheNotice, setCacheNotice] = useState<NoticeMessage | null>(null);
   const confirmation = useConfirmation();
   const [categories, setCategories] = useState<string[]>([]);
 
@@ -224,18 +222,24 @@ export function ComicDetailPage() {
   }
 
   async function cacheComic(category: string) {
+    if (!resource.data) {
+      return;
+    }
     setCategories([]);
-    setCacheNotice(tr('正在缓存…'));
+    setCacheNotice({ id: Date.now(), text: tr('正在缓存…') });
     try {
-      await window.electron.comics.cache(resource.data!, category);
-      setCacheNotice(tr('已缓存'));
+      await window.electron.comics.cache(resource.data, category);
+      setCacheNotice({ id: Date.now(), text: tr('已缓存') });
     } catch (error) {
-      setCacheNotice(String(error));
+      setCacheNotice({ id: Date.now(), text: String(error) });
     }
   }
 
   async function toggle(key: keyof store.ComicLibraryState) {
-    const comic = resource.data!;
+    const comic = resource.data;
+    if (!comic) {
+      return;
+    }
     await store.setComic(
       {
         id: comic.id,
@@ -248,13 +252,16 @@ export function ComicDetailPage() {
     saved.refetch();
   }
 
-  const comic = resource.data!;
-
   if (resource.isPending) {
     return <LoadingState label={tr('正在加载漫画…')} />;
   }
   if (resource.error) {
     return <RequestError error={resource.error} onRetry={resource.refetch} />;
+  }
+
+  const comic = resource.data;
+  if (!comic) {
+    return null;
   }
 
   if (reading) {
@@ -265,7 +272,7 @@ export function ComicDetailPage() {
     <Stack spacing={2}>
       <Typography variant="h4">{comic.title}</Typography>
       <Button onClick={chooseCategory}>{tr('下载漫画')}</Button>
-      {cacheNotice && <Alert severity="info">{cacheNotice}</Alert>}
+      <NoticeToast notice={cacheNotice} onClose={() => setCacheNotice(null)} />
       {confirmation.dialog}
       <Dialog open={categories.length > 0} onClose={() => setCategories([])}>
         <DialogTitle>{tr('缓存分类')}</DialogTitle>
@@ -366,12 +373,15 @@ export function ComicReader({ comic, onClose }: { comic: ComicDetail; onClose: (
   }, [comic.imageUrls, page]);
 
   async function changePage(next: number) {
+    if (!state) {
+      return;
+    }
     const value = Math.max(0, Math.min(comic.pageCount - 1, next));
     setPage(value);
     const updated = {
-      ...state!,
+      ...state,
       progress: {
-        ...state!.progress,
+        ...state.progress,
         [comic.id]: value,
       },
     };
@@ -380,8 +390,11 @@ export function ComicReader({ comic, onClose }: { comic: ComicDetail; onClose: (
   }
 
   async function changeSettings(changes: Partial<store.ComicReaderState>) {
+    if (!state) {
+      return;
+    }
     const next = {
-      ...state!,
+      ...state,
       ...changes,
     };
     setState(next);
@@ -402,7 +415,7 @@ export function ComicReader({ comic, onClose }: { comic: ComicDetail; onClose: (
   function end(event: React.PointerEvent) {
     const start = pointer.current;
     pointer.current = undefined;
-    if (!start) {
+    if (!start || !state) {
       return;
     }
     const x = event.clientX - start.x;
@@ -411,13 +424,13 @@ export function ComicReader({ comic, onClose }: { comic: ComicDetail; onClose: (
       setControls((value) => !value);
       return;
     }
-    if (state!.mode >= 4 || (transform.current?.state.scale ?? 1) !== 1) {
+    if (state.mode >= 4 || (transform.current?.state.scale ?? 1) !== 1) {
       return;
     }
-    if (state!.mode === 3 && Math.abs(y) > Math.abs(x) && Math.abs(y) > 48) {
+    if (state.mode === 3 && Math.abs(y) > Math.abs(x) && Math.abs(y) > 48) {
       void changePage(page + (y < 0 ? 1 : -1));
-    } else if (state!.mode !== 3 && Math.abs(x) > Math.abs(y) && Math.abs(x) > 48) {
-      void changePage(page + ((state!.mode === 1 ? x < 0 : x > 0) ? 1 : -1));
+    } else if (state.mode !== 3 && Math.abs(x) > Math.abs(y) && Math.abs(x) > 48) {
+      void changePage(page + ((state.mode === 1 ? x < 0 : x > 0) ? 1 : -1));
     }
   }
 
