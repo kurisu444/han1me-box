@@ -36,7 +36,12 @@ import { useLibrary } from '../../data/local/library_repository';
 import * as api from '../../data/remote/account_api';
 import type { VideoDetail } from '../../domain/models/video';
 import { useAccount } from '../account/account_controller';
-import { invalidateRemoteLibrary, useRemoteLibrary } from '../library/library_page';
+import {
+  invalidateRemoteLibrary,
+  useRemoteFavorites,
+  useRemotePlaylists,
+  useRemoteSubscriptions,
+} from '../library/library_page';
 import { NoticeToast, type NoticeMessage } from '../shared/notice_toast';
 import { downloadSource } from './video_helpers';
 
@@ -85,7 +90,7 @@ export function AuthorSubscribeButton({ video }: { video: VideoDetail }) {
   const state = useLibrary();
   const { account } = useAccount();
   const settings = useSettings();
-  const remote = useRemoteLibrary();
+  const remoteSubs = useRemoteSubscriptions();
   const [subscriptionOverride, setSubscriptionOverride] = useState<boolean>();
 
   const base = resolvedBaseUrl(settings);
@@ -93,9 +98,7 @@ export function AuthorSubscribeButton({ video }: { video: VideoDetail }) {
   const subscriptionUser = video.subscriptionUserId ?? video.currentUserId ?? account?.id;
   const subscribed =
     subscriptionOverride ??
-    (remote.data?.subscriptionArtists ?? state.artists).some(
-      (artist) => artist.name === video.artist,
-    );
+    (remoteSubs.artists ?? state.artists).some((artist) => artist.name === video.artist);
   const disabled = Boolean(account && (!actionToken || !subscriptionUser || !video.artistId));
 
   async function toggleSubscription() {
@@ -106,7 +109,7 @@ export function AuthorSubscribeButton({ video }: { video: VideoDetail }) {
       } else {
         await library.setSubscription(video, !subscribed);
       }
-      void invalidateRemoteLibrary();
+      void invalidateRemoteLibrary('subscriptions');
     } catch {
       setSubscriptionOverride(subscribed);
     }
@@ -144,8 +147,9 @@ export function VideoActions({ video }: { video: VideoDetail }) {
   const state = useLibrary();
   const { account } = useAccount();
   const settings = useSettings();
-  const remote = useRemoteLibrary();
   const [open, setOpen] = useState(false);
+  const remoteFavorites = useRemoteFavorites();
+  const remotePlaylists = useRemotePlaylists(open);
   const [creating, setCreating] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -158,11 +162,12 @@ export function VideoActions({ video }: { video: VideoDetail }) {
   const showNotice = (text: string) => setNotice({ id: Date.now(), text });
   const base = resolvedBaseUrl(settings);
   const watchUrl = siteEndpointUrl(base, `watch?v=${encodeURIComponent(video.id)}`);
-  const token = video.csrfToken ?? remote.data?.csrfToken ?? account?.csrfToken;
+  const token =
+    video.csrfToken ?? remotePlaylists.csrfToken ?? remoteFavorites.csrfToken ?? account?.csrfToken;
   const actionToken = video.csrfToken ?? account?.csrfToken;
   const favorite =
     favoriteOverride ??
-    (remote.data?.favorites ?? state.favorites).some((item) => item.videoCode === video.id);
+    (remoteFavorites.favorites ?? state.favorites).some((item) => item.videoCode === video.id);
   const defaultSource = downloadSource(video.sources, settings.downloadQuality);
 
   async function download(source = defaultSource) {
@@ -193,7 +198,7 @@ export function VideoActions({ video }: { video: VideoDetail }) {
       } else {
         await library.setFavorite(video, !favorite);
       }
-      void invalidateRemoteLibrary();
+      void invalidateRemoteLibrary('favorites');
     } catch (cause) {
       setFavoriteOverride(favorite);
       setError(String(cause));
@@ -215,7 +220,7 @@ export function VideoActions({ video }: { video: VideoDetail }) {
       } else {
         await library.saveToPlaylist(video, id);
       }
-      void invalidateRemoteLibrary();
+      void invalidateRemoteLibrary(id === '__watch_later__' ? 'watch-later' : 'playlists');
       setOpen(false);
     } catch (cause) {
       setError(String(cause));
@@ -269,7 +274,7 @@ export function VideoActions({ video }: { video: VideoDetail }) {
       } else {
         await library.createPlaylistWithVideo(video, title.trim(), description.trim());
       }
-      void invalidateRemoteLibrary();
+      void invalidateRemoteLibrary('playlists');
       setCreating(false);
       setOpen(false);
     } catch (cause) {
@@ -375,7 +380,7 @@ export function VideoActions({ video }: { video: VideoDetail }) {
             <ListItemButton onClick={() => selectPlaylist('__watch_later__')}>
               <ListItemText primary={tr('稍后再看')} />
             </ListItemButton>
-            {(remote.data?.playlists ?? state.playlists).map((playlist) => (
+            {(remotePlaylists.playlists ?? state.playlists).map((playlist) => (
               <ListItemButton key={playlist.id} onClick={() => selectPlaylist(playlist.id)}>
                 <ListItemText
                   primary={playlist.title}

@@ -4,7 +4,7 @@ import {
   queryClient,
 } from '../../../src/data/han1me_repository';
 import {
-  useRemoteLibrary,
+  useRemotePlaylists,
   invalidateRemoteLibrary,
 } from '../../../src/features/library/library_page';
 import { createRoot } from 'react-dom/client';
@@ -124,7 +124,7 @@ export function addFavorite() {
   return library.setFavorite(video, true);
 }
 function RemoteLibrary() {
-  const resource = useRemoteLibrary();
+  const resource = useRemotePlaylists();
   return <div>{resource.isPending ? 'Remote loading' : 'Remote ready'}</div>;
 }
 export function comments(id: string, accountId = '7', remote = false) {
@@ -149,7 +149,9 @@ export function comments(id: string, accountId = '7', remote = false) {
 }
 export { clearRequests, invalidateRemoteLibrary };
 export function expireComments() {
-  for (const query of queryClient.getQueryCache().findAll({ queryKey: ['han1me', 'comments'] })) {
+  for (const query of queryClient
+    .getQueryCache()
+    .findAll({ queryKey: ['han1me', 'comments-infinite'] })) {
     queryClient.setQueryData(query.queryKey, query.state.data, { updatedAt: Date.now() - 600001 });
   }
 }

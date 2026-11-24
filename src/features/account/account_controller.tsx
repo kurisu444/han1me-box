@@ -5,7 +5,6 @@ import type { Account } from '../../domain/models/account';
 import * as store from '../../data/local/account_store';
 import * as api from '../../data/han1me_repository';
 import { queryClient } from '../../data/han1me_repository';
-import { remoteLibrary } from '../../data/local/library_repository';
 
 interface AccountState {
   ready?: boolean;
@@ -32,7 +31,13 @@ const withoutClearance = (value: string) =>
     .filter((part) => part.trim().split('=')[0].toLowerCase() !== 'cf_clearance')
     .join(';')
     .trim();
-export function AccountProvider({ children }: { children: ReactNode }) {
+export function AccountProvider({
+  children,
+  syncRemote = true,
+}: {
+  children: ReactNode;
+  syncRemote?: boolean;
+}) {
   const settings = useSettings();
   const [loadedBase, setLoadedBase] = useState('');
   const [account, setAccount] = useState<Account>();
@@ -58,6 +63,9 @@ export function AccountProvider({ children }: { children: ReactNode }) {
         }
         setAccount(clean);
         setLoadedBase(base);
+        if (!syncRemote) {
+          return;
+        }
         try {
           const profile = {
             ...(await queryClient.fetchQuery(api.account(base))),
@@ -68,9 +76,6 @@ export function AccountProvider({ children }: { children: ReactNode }) {
           }
           setAccount(profile);
           await store.writeAccount(base, { ...profile, id: profile.id! });
-          if (profile.id) {
-            await queryClient.fetchQuery(remoteLibrary(base, profile.id));
-          }
         } catch {}
         if (active) {
           setAccounts(await store.readAllAccounts(base));
@@ -84,7 +89,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     return () => {
       active = false;
     };
-  }, [base]);
+  }, [base, syncRemote]);
 
   async function refreshAccounts() {
     setAccounts(await store.readAllAccounts(base));
@@ -136,11 +141,6 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       const next = { ...(await queryClient.fetchQuery(api.account(base))), cookie: account.cookie };
       setAccount(next);
       await store.writeAccount(base, { ...next, id: next.id! });
-      try {
-        if (next.id) {
-          await queryClient.fetchQuery(remoteLibrary(base, next.id));
-        }
-      } catch {}
       await refreshAccounts();
     } catch {}
   }

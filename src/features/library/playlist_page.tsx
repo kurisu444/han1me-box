@@ -34,7 +34,7 @@ import { NoticeToast, type NoticeMessage } from '../shared/notice_toast';
 import { RequestError } from '../shared/request_error';
 import { VideoGridSkeleton } from '../shared/video_card';
 import { useConfirmation } from '../shared/use_confirmation';
-import { invalidateRemoteLibrary, useRemoteLibrary } from './library_page';
+import { invalidateRemoteLibrary, useRemotePlaylists } from './library_page';
 import { BatchManageBar, LibraryVideoGrid } from './library_video_grid';
 import {
   deletePlaylistEntry,
@@ -61,7 +61,7 @@ export function PlaylistDetailPage() {
   const settings = useSettings();
   const local = useLibrary();
   const { account, ready } = useAccount();
-  const remote = useRemoteLibrary();
+  const remotePlaylists = useRemotePlaylists();
   const base = resolvedBaseUrl(settings);
 
   const [remoteSort, setRemoteSort] = useState('latest');
@@ -75,11 +75,11 @@ export function PlaylistDetailPage() {
     enabled: ready !== false && Boolean(account && id),
   });
 
-  const playlists = remote.data?.playlists ?? local.playlists;
+  const playlists = remotePlaylists.playlists ?? local.playlists;
   const summary = playlists.find((item) => item.id === id);
   const playlist = account ? (remotePlaylist.data?.playlist ?? summary) : summary;
   const playlistDescription = account ? remotePlaylist.data?.description : playlist?.description;
-  const libraryToken = remote.data?.csrfToken ?? account?.csrfToken;
+  const libraryToken = remotePlaylists.csrfToken ?? account?.csrfToken;
   const videos: FollowingVideo[] = playlist
     ? account
       ? (remotePlaylist.data?.videos ?? [])
@@ -97,7 +97,7 @@ export function PlaylistDetailPage() {
   }
 
   function reloadRemote() {
-    void invalidateRemoteLibrary();
+    void invalidateRemoteLibrary('playlists');
     void remotePlaylist.refetch();
   }
 
@@ -126,7 +126,7 @@ export function PlaylistDetailPage() {
       account,
       libraryToken,
       targetId: playlist.id,
-      onReloadRemote: () => void invalidateRemoteLibrary(),
+      onReloadRemote: () => void invalidateRemoteLibrary('playlists'),
     });
     navigate('/library/playlists', { replace: true });
   }

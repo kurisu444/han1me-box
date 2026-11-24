@@ -33,14 +33,19 @@ export async function run(base: string) {
   equal(profile.id, '7');
   equal(profile.name, 'Fixture User');
   equal(profile.email, 'fixture@example.test');
-  const library = await account.library(base, '7');
+  const watchLaterPage1 = await account.watchLaterPage(base, '7', 1);
+  const watchLaterPage2 = await account.watchLaterPage(base, '7', 2);
   equal(
-    library.watchLater.map((item) => item.videoCode),
+    [...watchLaterPage1.items, ...watchLaterPage2.items].map((item) => item.videoCode),
     ['123', '456'],
   );
-  equal(library.favorites.length, 2);
-  equal(library.playlists[0].id, '9');
-  equal(library.subscriptionArtists[0].name, 'Studio');
+  const favoritesPage1 = await account.favoritesPage(base, '7', 1);
+  const favoritesPage2 = await account.favoritesPage(base, '7', 2);
+  equal([...favoritesPage1.items, ...favoritesPage2.items].length, 2);
+  const playlists = await account.playlistsPage(base, '7', 1);
+  equal(playlists.items[0].id, '9');
+  const subscriptions = await account.subscriptionsPage(base, 1);
+  equal(subscriptions.artists[0].name, 'Studio');
   const playlist = await account.playlist(base, '9', 'popular');
   equal(playlist.videos[0].playlistItemId, '8');
   equal(playlist.playlist.title, 'Fixture list');

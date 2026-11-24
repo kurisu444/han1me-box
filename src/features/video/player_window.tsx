@@ -371,7 +371,7 @@ export function PlayerWindowApp() {
     <HashRouter>
       <PlayerChromeProvider>
         <PlayerTitleBar />
-        <AccountProvider>
+        <AccountProvider syncRemote={false}>
           <PlayerWindowRoutes />
           <WebsitePanel />
         </AccountProvider>

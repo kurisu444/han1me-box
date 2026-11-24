@@ -254,8 +254,6 @@ export function ExplorePage() {
     getNextPageParam: (lastPage) =>
       lastPage.page < lastPage.totalPages ? lastPage.page + 1 : undefined,
     enabled: ready !== false,
-    staleTime: 5 * 60 * 1000,
-    gcTime: 15 * 60 * 1000,
   });
 
   useEffect(() => {

@@ -5,7 +5,6 @@ import {
   type FollowingVideo,
   type Playlist,
   type PlaylistDetail,
-  type RemoteLibrary,
   type SubscribedArtist,
 } from '../../domain/models/library';
 import type { Comment } from '../../domain/models/video';
@@ -50,7 +49,7 @@ async function csrfToken(baseUrl: string, fresh = false) {
 }
 async function form(url: string, data: Record<string, string>, token: string) {
   let origin = originFor(url);
-  let currentToken = (await csrfToken(origin)) ?? token;
+  let currentToken = token || (await csrfToken(origin)) || '';
   async function submit() {
     origin = originFor(origin);
     const target = new URL(url);
@@ -224,14 +223,20 @@ export const deletePlaylist = (base: string, token: string, id: string) =>
   updatePlaylist(base, token, id, '', '', true);
 export async function removePlaylistItem(base: string, token: string, id: string) {
   const origin = originFor(base);
-  const currentToken = (await csrfToken(origin)) ?? token;
-  const response = await http.request(
-    `${origin}/playlist/items/${id}`,
-    'DELETE',
-    {},
-    { 'X-CSRF-TOKEN': currentToken, Accept: 'application/json', Referer: `${origin}/` },
-    true,
-  );
+  let currentToken = token || (await csrfToken(origin)) || '';
+  const submit = () =>
+    http.request(
+      `${origin}/playlist/items/${id}`,
+      'DELETE',
+      {},
+      { 'X-CSRF-TOKEN': currentToken, Accept: 'application/json', Referer: `${origin}/` },
+      true,
+    );
+  let response = await submit();
+  if (response.statusCode === 419) {
+    currentToken = (await csrfToken(origin, true)) ?? currentToken;
+    response = await submit();
+  }
   checkResponse(response, base);
   if (JSON.parse(response.body)?.success !== true) {
     throw new Error('Playlist item removal failed');
@@ -239,13 +244,19 @@ export async function removePlaylistItem(base: string, token: string, id: string
 }
 export async function deleteHistory(base: string, token: string, id: string) {
   const origin = originFor(base);
-  const currentToken = (await csrfToken(origin)) ?? token;
-  const response = await http.request(
-    `${origin}/user/tab-item/${id}`,
-    'DELETE',
-    { tab: 'histories' },
-    { 'X-CSRF-TOKEN': currentToken, Referer: `${origin}/` },
-  );
+  let currentToken = token || (await csrfToken(origin)) || '';
+  const submit = () =>
+    http.request(
+      `${origin}/user/tab-item/${id}`,
+      'DELETE',
+      { tab: 'histories' },
+      { 'X-CSRF-TOKEN': currentToken, Referer: `${origin}/` },
+    );
+  let response = await submit();
+  if (response.statusCode === 419) {
+    currentToken = (await csrfToken(origin, true)) ?? currentToken;
+    response = await submit();
+  }
   checkResponse(response, base);
   const body = JSON.parse(response.body);
   if (body && typeof body === 'object' && body.success !== true) {
@@ -427,41 +438,31 @@ async function paged<T>(
   }
   return items;
 }
-export async function library(base: string, userId: string): Promise<RemoteLibrary> {
-  const urls = ['saves', 'likes', 'playlists', 'histories?sort=latest&page=1'].map((tab) =>
-    siteEndpointUrl(base, `user/${userId}/${tab}`),
-  );
-  const pages = await Promise.all(urls.map(document));
-  const videoId = (item: FollowingVideo) => item.videoCode;
-  const [watchLater, favorites, playlists, history] = await Promise.all([
-    paged(
-      (number) => `${urls[0]}?page=${number}`,
-      pages[0],
-      (page) => parseLibraryVideos(base, page),
-      videoId,
-    ),
-    paged(
-      (number) => `${urls[1]}?page=${number}`,
-      pages[1],
-      (page) => parseLibraryVideos(base, page),
-      videoId,
-    ),
-    paged(
-      (number) => `${urls[2]}?page=${number}`,
-      pages[2],
-      (page) => parsePlaylists(base, page),
-      (item) => item.id,
-    ),
-    paged(
-      (number) => siteEndpointUrl(base, `user/${userId}/histories?sort=latest&page=${number}`),
-      pages[3],
-      (page) => parseLibraryVideos(base, page),
-      videoId,
-    ),
-  ]);
-  const first = await document(siteEndpointUrl(base, 'subscriptions?page=1'));
-  const subscriptionArtists: SubscribedArtist[] = Array.from(
-    first.querySelectorAll('.subscriptions-nav .subscriptions-artist-card'),
+export interface LibraryVideoPage {
+  items: FollowingVideo[];
+  page: number;
+  totalPages: number;
+  csrfToken?: string;
+}
+
+export interface LibraryPlaylistPage {
+  items: Playlist[];
+  page: number;
+  totalPages: number;
+  csrfToken?: string;
+}
+
+export interface LibrarySubscriptionPage {
+  items: FollowingVideo[];
+  artists: SubscribedArtist[];
+  page: number;
+  totalPages: number;
+  csrfToken?: string;
+}
+
+function parseSubscriptionArtists(base: string, page: Document): SubscribedArtist[] {
+  return Array.from(
+    page.querySelectorAll('.subscriptions-nav .subscriptions-artist-card'),
     (card) => {
       const name = text(card.querySelector('.card-mobile-title')) ?? '';
       const images = card.querySelectorAll('img');
@@ -473,23 +474,77 @@ export async function library(base: string, userId: string): Promise<RemoteLibra
       };
     },
   ).filter((artist) => artist.name);
-  const rest = await Promise.all(
-    Array.from({ length: pageCount(first) - 1 }, (_, index) =>
-      document(siteEndpointUrl(base, `subscriptions?page=${index + 2}`)),
-    ),
-  );
+}
+
+export async function watchLaterPage(
+  base: string,
+  userId: string,
+  page = 1,
+): Promise<LibraryVideoPage> {
+  const doc = await document(siteEndpointUrl(base, `user/${userId}/saves?page=${page}`));
   return {
-    watchLater,
-    favorites,
-    playlists,
-    history,
-    subscriptionArtists,
-    subscriptions: [first, ...rest].flatMap((page) =>
-      parseLibraryVideos(base, page, 'subscription'),
-    ),
-    csrfToken: [pages[2], pages[0], pages[1], pages[3]].map(tokenFrom).find(Boolean),
+    items: parseLibraryVideos(base, doc),
+    page,
+    totalPages: pageCount(doc),
+    csrfToken: tokenFrom(doc),
   };
 }
+
+export async function favoritesPage(
+  base: string,
+  userId: string,
+  page = 1,
+): Promise<LibraryVideoPage> {
+  const doc = await document(siteEndpointUrl(base, `user/${userId}/likes?page=${page}`));
+  return {
+    items: parseLibraryVideos(base, doc),
+    page,
+    totalPages: pageCount(doc),
+    csrfToken: tokenFrom(doc),
+  };
+}
+
+export async function historyPage(
+  base: string,
+  userId: string,
+  page = 1,
+): Promise<LibraryVideoPage> {
+  const doc = await document(
+    siteEndpointUrl(base, `user/${userId}/histories?sort=latest&page=${page}`),
+  );
+  return {
+    items: parseLibraryVideos(base, doc),
+    page,
+    totalPages: pageCount(doc),
+    csrfToken: tokenFrom(doc),
+  };
+}
+
+export async function playlistsPage(
+  base: string,
+  userId: string,
+  page = 1,
+): Promise<LibraryPlaylistPage> {
+  const doc = await document(siteEndpointUrl(base, `user/${userId}/playlists?page=${page}`));
+  return {
+    items: parsePlaylists(base, doc),
+    page,
+    totalPages: pageCount(doc),
+    csrfToken: tokenFrom(doc),
+  };
+}
+
+export async function subscriptionsPage(base: string, page = 1): Promise<LibrarySubscriptionPage> {
+  const doc = await document(siteEndpointUrl(base, `subscriptions?page=${page}`));
+  return {
+    items: parseLibraryVideos(base, doc, 'subscription'),
+    artists: parseSubscriptionArtists(base, doc),
+    page,
+    totalPages: pageCount(doc),
+    csrfToken: tokenFrom(doc),
+  };
+}
+
 export async function playlist(base: string, id: string, sort: string): Promise<PlaylistDetail> {
   const url = (number: number) =>
     siteEndpointUrl(

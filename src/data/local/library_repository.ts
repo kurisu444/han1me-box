@@ -8,12 +8,11 @@ import {
   type FollowingVideo,
   type Playlist,
   type PlaylistSortOrder,
-  type RemoteLibrary,
   type SubscribedArtist,
 } from '../../domain/models/library';
 import { readJsonStore, updateJsonStore, jsonRecords } from './json_store';
 import { queryClient } from '../han1me_repository';
-import { queryOptions, useQuery } from '@tanstack/react-query';
+import { infiniteQueryOptions, useQuery } from '@tanstack/react-query';
 import * as accountApi from '../remote/account_api';
 
 export interface LibraryState {
@@ -267,35 +266,53 @@ export function addSubscriptionVideo(video: VideoDetail) {
     };
   });
 }
-export function cacheRemote(remote: RemoteLibrary) {
-  return update((current) => ({
-    ...current,
-    watchLater: remote.watchLater,
-    favorites: remote.favorites,
-    playlists: remote.playlists,
-    artists: remote.subscriptionArtists,
-    subscriptionVideos: Object.fromEntries(
-      remote.subscriptionArtists.map((artist) => [
-        artistId(artist.name),
-        remote.subscriptions.filter((video) => video.artistName === artist.name),
-      ]),
-    ),
-  }));
-}
 export const replaceFavorites = (favorites: FollowingVideo[]) =>
   update((current) => ({ ...current, favorites }));
 export const replaceLibrary = (value: LibraryState) => update(() => value);
 
-export const remoteLibrary = (baseUrl: string, id: string) =>
-  queryOptions({
-    queryKey: ['han1me', 'library', baseUrl, id],
-    queryFn: async () => {
-      const library = await accountApi.library(baseUrl, id);
-      await cacheRemote(library);
-      return library;
-    },
-    staleTime: 300000,
-    gcTime: 300000,
+export const remoteWatchLater = (baseUrl: string, userId: string) =>
+  infiniteQueryOptions({
+    queryKey: ['han1me', 'library', 'watch-later', baseUrl, userId],
+    initialPageParam: 1,
+    queryFn: ({ pageParam }) => accountApi.watchLaterPage(baseUrl, userId, pageParam),
+    getNextPageParam: (lastPage) =>
+      lastPage.page < lastPage.totalPages ? lastPage.page + 1 : undefined,
+  });
+
+export const remoteFavorites = (baseUrl: string, userId: string) =>
+  infiniteQueryOptions({
+    queryKey: ['han1me', 'library', 'favorites', baseUrl, userId],
+    initialPageParam: 1,
+    queryFn: ({ pageParam }) => accountApi.favoritesPage(baseUrl, userId, pageParam),
+    getNextPageParam: (lastPage) =>
+      lastPage.page < lastPage.totalPages ? lastPage.page + 1 : undefined,
+  });
+
+export const remoteHistory = (baseUrl: string, userId: string) =>
+  infiniteQueryOptions({
+    queryKey: ['han1me', 'library', 'history', baseUrl, userId],
+    initialPageParam: 1,
+    queryFn: ({ pageParam }) => accountApi.historyPage(baseUrl, userId, pageParam),
+    getNextPageParam: (lastPage) =>
+      lastPage.page < lastPage.totalPages ? lastPage.page + 1 : undefined,
+  });
+
+export const remotePlaylists = (baseUrl: string, userId: string) =>
+  infiniteQueryOptions({
+    queryKey: ['han1me', 'library', 'playlists', baseUrl, userId],
+    initialPageParam: 1,
+    queryFn: ({ pageParam }) => accountApi.playlistsPage(baseUrl, userId, pageParam),
+    getNextPageParam: (lastPage) =>
+      lastPage.page < lastPage.totalPages ? lastPage.page + 1 : undefined,
+  });
+
+export const remoteSubscriptions = (baseUrl: string, userId: string) =>
+  infiniteQueryOptions({
+    queryKey: ['han1me', 'library', 'subscriptions', baseUrl, userId],
+    initialPageParam: 1,
+    queryFn: ({ pageParam }) => accountApi.subscriptionsPage(baseUrl, pageParam),
+    getNextPageParam: (lastPage) =>
+      lastPage.page < lastPage.totalPages ? lastPage.page + 1 : undefined,
   });
 
 export function useLibrary() {
