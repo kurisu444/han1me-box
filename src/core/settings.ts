@@ -22,8 +22,6 @@ export interface AppSettings {
   language: AppLanguage;
   textScale: number;
   baseUrl: string;
-  comicMode: boolean;
-  videoBaseUrl: string;
   useCompactSearchCards: boolean;
   useCustomMirrorSite: boolean;
   customMirrorSite: string;
@@ -76,8 +74,6 @@ export function createAppSettings(values: Partial<AppSettings> = {}): AppSetting
     language: 'system',
     textScale: 1,
     baseUrl: 'https://hanime1.me',
-    comicMode: false,
-    videoBaseUrl: 'https://hanime1.me',
     useCompactSearchCards: true,
     useCustomMirrorSite: false,
     customMirrorSite: '',
@@ -206,9 +202,6 @@ export function appSettingsFromJson(values: Partial<AppSettings>): AppSettings {
     customThemeColor: /^[0-9A-F]{6}$/.test(settings.customThemeColor.replace('#', '').toUpperCase())
       ? settings.customThemeColor.replace('#', '').toUpperCase()
       : '62539F',
-    videoBaseUrl:
-      values.videoBaseUrl ??
-      (settings.baseUrl === 'https://hanimeone.me' ? 'https://hanime1.me' : settings.baseUrl),
     themeMode: ['system', 'light', 'dark'].includes(settings.themeMode)
       ? settings.themeMode
       : 'system',

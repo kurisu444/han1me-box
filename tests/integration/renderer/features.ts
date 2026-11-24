@@ -1,6 +1,5 @@
 import { run as dataChecks } from './data';
 import * as account from '../../../src/data/remote/account_api';
-import * as comics from '../../../src/data/remote/comic_api';
 import * as getchu from '../../../src/data/remote/getchu_api';
 import { previews } from '../../../src/data/remote/preview_api';
 import { translateVideo } from '../../../src/data/remote/google_translate_api';
@@ -85,15 +84,6 @@ export async function run(base: string) {
   const historical = await previews(base, '202001');
   equal(historical.items[0].brand, 'Studio');
   equal(historical.items[0].previewImages.length, 1);
-  const feed = await comics.home();
-  equal(feed.trending[0].id, '88');
-  equal(feed.latest.length, 1);
-  const browse = await comics.browse('/comics', 2);
-  equal(browse.totalPages, 3);
-  const comic = await comics.detail('88');
-  equal(comic.imageUrls, ['http://images.test/1.webp', 'http://images.test/2.jpg']);
-  equal(comic.artist, 'Artist');
-  equal(comic.tags[0].type, '作者');
   const getchuFeed = await getchu.previews('202610');
   equal(getchuFeed.groups[0].items[0].id, '555');
   const detail = await getchu.detail('555');
@@ -121,9 +111,7 @@ export async function run(base: string) {
     captionTitle: 'Translated Caption',
     description: 'Translated Description',
   });
-  passed.push(
-    'Site previews, Getchu JSON-LD/series, comic reader extensions and translation segments',
-  );
+  passed.push('Site previews, Getchu JSON-LD/series and translation segments');
   const settings = createAppSettings({
     webDavUrl: base + '/dav/?key=fixture',
     webDavUsername: '用户',

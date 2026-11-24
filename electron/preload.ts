@@ -1,5 +1,4 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { ComicCacheEntry, ComicDetail } from '../src/domain/models/comic';
 import type { DownloadGroupSort, DownloadState } from '../src/domain/models/download';
 import type { PlaylistQueue, VideoDetail, VideoSource } from '../src/domain/models/video';
 import type { BackupBundle } from '../src/features/settings/data_settings';
@@ -18,8 +17,6 @@ export type StoreFileName =
   | 'accounts.json'
   | 'search_history.json'
   | 'following_store.json'
-  | 'comic_reader.json'
-  | 'comic_library.json'
   | 'keyframes.json'
   | 'check_ins.json'
   | 'checkin_store.json';
@@ -77,19 +74,6 @@ const electronApi = {
     ipcRenderer.invoke('directory:normalize', value),
   openExternal: (url: string): Promise<void> => ipcRenderer.invoke('external:open', url),
   fileExists: (file: string): Promise<boolean> => ipcRenderer.invoke('file:exists', file),
-
-  comics: {
-    entries: (): Promise<ComicCacheEntry[]> => ipcRenderer.invoke('comics:entries'),
-    categories: (): Promise<string[]> => ipcRenderer.invoke('comics:categories'),
-    cache: (detail: ComicDetail, category: string): Promise<void> =>
-      ipcRenderer.invoke('comics:cache', detail, category),
-    addCategory: (name: string): Promise<void> => ipcRenderer.invoke('comics:addCategory', name),
-    deleteCategory: (name: string): Promise<void> =>
-      ipcRenderer.invoke('comics:deleteCategory', name),
-    remove: (entry: ComicCacheEntry): Promise<void> => ipcRenderer.invoke('comics:remove', entry),
-    extract: (entry: ComicCacheEntry): Promise<string[]> =>
-      ipcRenderer.invoke('comics:extract', entry),
-  },
 
   backup: {
     export: (bundle: Record<string, unknown>): Promise<boolean> =>

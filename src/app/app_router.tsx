@@ -2,8 +2,6 @@ import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
 import { Alert, Button } from '@mui/material';
 import { HashRouter, Link, Route, Routes, useLocation, useParams } from 'react-router-dom';
 import { AccountPage } from '../features/account/account_page';
-import { ComicCachePage } from '../features/comics/comic_cache_page';
-import { ComicDetailPage, ComicsPage } from '../features/comics/comic_pages';
 import { PlaylistDetailPage } from '../features/library/playlist_page';
 import { AppShell, mainBranches } from '../features/navigation/app_shell';
 import { GetchuDetailPage, GetchuPage } from '../features/previews/getchu_page';
@@ -37,9 +35,6 @@ export function AppRouter() {
             <Route key={pattern} path={pattern} element={null} />
           ))}
           <Route path="library/playlist/:id" element={<PlaylistDetailPage />} />
-          <Route path="comics/cache" element={<ComicCachePage />} />
-          <Route path="comics" element={<ComicsPage />} />
-          <Route path="comics/:id" element={<ComicDetailPage />} />
           <Route path="getchu" element={<GetchuPage />} />
           <Route path="getchu/:id" element={<GetchuDetailPage />} />
           <Route path="previews" element={<PreviewsPage />} />

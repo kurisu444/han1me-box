@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import ContrastOutlinedIcon from '@mui/icons-material/ContrastOutlined';
-import LanguageOutlinedIcon from '@mui/icons-material/LanguageOutlined';
 import PaletteOutlinedIcon from '@mui/icons-material/PaletteOutlined';
 import TranslateOutlinedIcon from '@mui/icons-material/TranslateOutlined';
 import { Box, Chip, Paper, Slider, Stack, TextField, Typography } from '@mui/material';
@@ -150,14 +149,6 @@ export function InterfaceLayoutSettings() {
   const settings = useSettings();
   const save = useSaveSettings();
 
-  function setComicMode(value: boolean) {
-    void save({
-      comicMode: value,
-      baseUrl: value ? 'https://hanimeone.me' : settings.videoBaseUrl,
-      videoBaseUrl: value ? settings.baseUrl : settings.videoBaseUrl,
-    });
-  }
-
   return (
     <Stack spacing={3}>
       <SettingSection title={tr('常规')}>
@@ -173,12 +164,6 @@ export function InterfaceLayoutSettings() {
           title={tr('首页焦点图')}
           checked={settings.showHomeFeatured}
           onChange={(showHomeFeatured) => void save({ showHomeFeatured })}
-        />
-        <SwitchRow
-          icon={<LanguageOutlinedIcon />}
-          title={tr('漫画模式')}
-          checked={settings.comicMode}
-          onChange={setComicMode}
         />
         <SwitchRow
           title={tr('搜索竖版海报卡片')}

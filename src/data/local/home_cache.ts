@@ -1,5 +1,4 @@
 import type { HomeFeed, HomeSection, VideoCard } from '../../domain/models/video';
-import { comicCardFromJson, type ComicHome, type ComicCard } from '../../domain/models/comic';
 import { readJsonStore, updateJsonStore, jsonRecords } from './json_store';
 
 type HomeCache = Record<string, HomeFeed>;
@@ -40,23 +39,5 @@ export function writeHomeCache(
   return updateJsonStore<HomeCache>('home_cache.json', (cache) => ({
     ...cache,
     [cacheKey(baseUrl, accountId)]: feed,
-  }));
-}
-
-export async function readComicHome() {
-  const cache = await readJsonStore<Record<string, ComicHome>>('home_cache.json');
-  const home = cache['home_feed_v2:comics'];
-  if (!home || typeof home !== 'object' || Array.isArray(home)) {
-    return undefined;
-  }
-  return {
-    trending: jsonRecords<ComicCard>(home.trending).map(comicCardFromJson),
-    latest: jsonRecords<ComicCard>(home.latest).map(comicCardFromJson),
-  };
-}
-export function writeComicHome(feed: ComicHome) {
-  return updateJsonStore('home_cache.json', (cache: Record<string, unknown>) => ({
-    ...cache,
-    'home_feed_v2:comics': feed,
   }));
 }

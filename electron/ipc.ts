@@ -1,12 +1,10 @@
 import { ipcMain, shell, BrowserWindow, type IpcMainInvokeEvent } from 'electron';
 import { access } from 'node:fs/promises';
 import type { AppSettings } from '../src/core/settings';
-import type { ComicCacheEntry, ComicDetail } from '../src/domain/models/comic';
 import type { DownloadGroupSort, DownloadState } from '../src/domain/models/download';
 import type { VideoDetail, VideoSource } from '../src/domain/models/video';
 import * as account from './account';
 import * as backup from './backup';
-import * as comicCache from './comic_cache';
 import * as downloads from './downloads';
 import * as http from './http';
 import * as store from './store';
@@ -117,18 +115,6 @@ export async function registerIpc() {
   ipcMain.handle('session:verify', (event, url: string) =>
     account.openVerification(url, senderWindow(event)),
   );
-
-  ipcMain.handle('comics:entries', () => comicCache.entries());
-  ipcMain.handle('comics:categories', () => comicCache.categories());
-  ipcMain.handle('comics:cache', (_event, detail: ComicDetail, category: string) =>
-    comicCache.cache(detail, category),
-  );
-  ipcMain.handle('comics:addCategory', (_event, name: string) => comicCache.addCategory(name));
-  ipcMain.handle('comics:deleteCategory', (_event, name: string) =>
-    comicCache.deleteCategory(name),
-  );
-  ipcMain.handle('comics:remove', (_event, entry: ComicCacheEntry) => comicCache.remove(entry));
-  ipcMain.handle('comics:extract', (_event, entry: ComicCacheEntry) => comicCache.extract(entry));
 
   ipcMain.handle('downloads:state', () => downloads.getState());
   ipcMain.handle(

@@ -580,39 +580,7 @@ const repo = path.resolve(__dirname, '../..');
     win.webContents.sendInputEvent({ type: 'mouseDown', ...center, button: 'left', clickCount: 2 });
     win.webContents.sendInputEvent({ type: 'mouseUp', ...center, button: 'left', clickCount: 2 });
     await waitFor(scale + '>1.1');
-    await evaluate('Components.reader()');
-    await waitFor('document.body.innerText.includes("1/2")');
-    await evaluate(
-      'Array.from(document.querySelectorAll("button")).find(e=>e.textContent==="放大" || e.textContent==="Zoom in").click()',
-    );
-    await waitFor(scale + '>1.1');
-    await evaluate(
-      'Array.from(document.querySelectorAll("button")).find(e=>e.textContent==="Next page").click()',
-    );
-    await waitFor('document.body.innerText.includes("2/2")');
-    await waitFor(scale + '===1');
-    await waitFor('(await window.electron.store.read("comic_reader.json")).progress?.reader === 1');
-    const reader = JSON.parse(await fs.readFile(root + '/comic_reader.json', 'utf8'));
-    assert.equal(reader.progress.reader, 1);
-    await evaluate(
-      'document.querySelector("[role=combobox]").dispatchEvent(new MouseEvent("mousedown",{bubbles:true}))',
-    );
-    await waitFor('document.querySelector("[role=option]")');
-    await evaluate(
-      'Array.from(document.querySelectorAll("[role=option]")).find(e=>e.textContent==="Long strip").click()',
-    );
-    await waitFor('document.querySelectorAll(".react-transform-component").length===2');
-    await evaluate(
-      'Array.from(document.querySelectorAll("button")).find(e=>e.textContent==="Zoom in").click()',
-    );
-    await waitFor(scale + '>1.1');
-    assert.equal(
-      await evaluate(
-        'new DOMMatrix(getComputedStyle(document.querySelectorAll(".react-transform-component")[1]).transform).a',
-      ),
-      1,
-    );
-    console.log('PASS image wheel zoom, drag pan, image/page reset and comic progress');
+    console.log('PASS image wheel zoom, drag pan, image reset and double click');
     assert.equal(
       errors.filter((e) => !e.includes('Failed to load resource')).length,
       0,

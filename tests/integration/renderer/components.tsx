@@ -18,7 +18,6 @@ import { VideoPlayerPanel } from '../../../src/features/video/player/video_playe
 import { VideoPage } from '../../../src/features/video/video_page';
 import { ExplorePage } from '../../../src/features/explore/explore_page';
 import { ImageGallery } from '../../../src/features/shared/image_gallery';
-import { ComicReader } from '../../../src/features/comics/comic_pages';
 import { CommentsList } from '../../../src/features/video/comments/video_comments';
 import { AccountContext } from '../../../src/features/account/account_controller';
 import * as library from '../../../src/data/local/library_repository';
@@ -90,22 +89,6 @@ export function player(mediaBase: string, broken = false) {
 }
 export function gallery() {
   render('gallery', <ImageGallery title="Gallery" images={['/picture.svg?1', '/picture.svg?2']} />);
-}
-export function reader() {
-  render(
-    'reader',
-    <ComicReader
-      comic={{
-        id: 'reader',
-        title: 'Reader',
-        coverUrl: '',
-        pageCount: 2,
-        tags: [],
-        imageUrls: ['/picture.svg?1', '/picture.svg?2'],
-      }}
-      onClose={() => {}}
-    />,
-  );
 }
 function Favorites({ name }: { name: string }) {
   const state = useLibrary();

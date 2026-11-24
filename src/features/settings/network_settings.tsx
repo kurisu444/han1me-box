@@ -34,7 +34,6 @@ export function NetworkSettings() {
   function changeBaseUrl(value: string) {
     void save({
       baseUrl: value,
-      videoBaseUrl: settings.comicMode ? settings.videoBaseUrl : value,
       useCustomMirrorSite: false,
       customMirrorSite: '',
     });
@@ -89,7 +88,6 @@ export function NetworkSettings() {
           title={tr('主站')}
           value={settings.baseUrl}
           options={siteOptions}
-          disabled={settings.comicMode}
           onChange={changeBaseUrl}
         />
         <SettingRow

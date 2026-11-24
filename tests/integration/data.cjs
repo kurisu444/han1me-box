@@ -57,8 +57,6 @@ app.on('window-all-closed', () => {});
     let likeAttempts = 0;
     const card = (id) =>
       `<div class="user-tab-item-wrapper"><a href="/watch?v=${id}"></a><img src="/cover.jpg"><div class="title">Video ${id}</div></div>`;
-    const comicCard =
-      '<a href="/comic/88"><img src="/cover.jpg"><span class="comic-rows-videos-title">Comic</span></a>';
     server = http.createServer(async (request, response) => {
       const url = new URL(request.url, 'http://localhost');
       let pathname = url.pathname;
@@ -164,18 +162,6 @@ app.on('window-all-closed', () => {});
         return response.end(
           '<div class="content-padding"><div class="row" id="123"><h3>Preview</h3><div class="preview-info-cover"><img src="/cover.jpg"></div><div class="preview-info-content-padding"><h4>Title</h4><h5><a>Studio</a></h5><h5>2020-01-01</h5><img class="preview-image-modal-trigger" src="/sample.jpg"></div></div></div>',
         );
-      if (pathname === '/comics')
-        return response.end(
-          `<div class="comic-rows-wrapper"><h3>發燒</h3>${comicCard}</div><div class="comic-rows-wrapper"><h3>最新</h3>${comicCard}</div><ul class="pagination"><li><a class="page-link">3</a></li></ul>`,
-        );
-      if (pathname === '/comic/88')
-        return response.end(
-          '<h3 class="title">Comic</h3><div class="comics-metadata-margin-top"><h5><a href="https://hanimeone.me/artists/artist">Artist</a></h5></div>',
-        );
-      if (pathname === '/comic/88/1')
-        return response.end(
-          '<div class="comic-show-content-nav" data-pages="2"></div><img id="current-page-image" data-prefix="http://images.test/" data-extension="jpg"><script>window.extensions = {}; extensions.innerHTML = \'[&quot;w&quot;,&quot;j&quot;]\';</script>',
-        );
       if (pathname === '/all/month_title.html')
         return response.end(
           '<div><div class="category_anime_t2">2026-10</div></div><div class="category_anime_b"><div class="div_product"><table><tr><td class="dd"><a href="/item/555/">Fixture (Studio)</a></td></tr></table><img src="/package_s.jpg"></div></div>',
@@ -197,7 +183,6 @@ app.on('window-all-closed', () => {});
         );
       if (pathname.endsWith('han1me-box-favorites.json'))
         return response.end(JSON.stringify([{ videoCode: '1', title: 'Remote', addedAt: 1 }]));
-      if (pathname === '/image') return response.end(Buffer.from('image-fixture'));
       response.writeHead(404);
       response.end('missing ' + pathname);
     });
@@ -205,11 +190,7 @@ app.on('window-all-closed', () => {});
     const base = `http://127.0.0.1:${server.address().port}`;
     session.defaultSession.webRequest.onBeforeRequest(
       {
-        urls: [
-          'https://www.getchu.com/*',
-          'https://hanimeone.me/*',
-          'https://translate.googleapis.com/*',
-        ],
+        urls: ['https://www.getchu.com/*', 'https://translate.googleapis.com/*'],
       },
       (details, callback) => {
         const url = new URL(details.url);
@@ -241,27 +222,6 @@ app.on('window-all-closed', () => {});
     assert.equal(watch.continueItems.length, 6);
     assert.equal(getSettings().preferredQuality, 1080);
     console.log('PASS cookie redirect isolation, disk persistence and live settings update');
-    const comicCache = require('../../dist-electron/comic_cache');
-    await comicCache.addCategory('Fixture');
-    await comicCache.cache(
-      {
-        id: 'fixture',
-        title: 'Comic',
-        coverUrl: '',
-        pageCount: 2,
-        imageUrls: [base + '/image', base + '/image'],
-      },
-      'Fixture',
-    );
-    const entry = (await comicCache.entries())[0];
-    const files = await comicCache.extract(entry);
-    assert.equal((await fs.readFile(files[0])).toString(), 'image-fixture');
-    await comicCache.deleteCategory('Fixture');
-    assert.equal((await comicCache.entries())[0].category, '默认');
-    await comicCache.remove(entry);
-    assert.deepEqual(await comicCache.entries(), []);
-    await fs.rm(path.dirname(files[0]), { recursive: true, force: true });
-    console.log('PASS comic download/archive/extract/categories/removal');
     const backup = require('../../dist-electron/backup');
     const backupPath = path.join(root, 'fixture.zip');
     dialog.showSaveDialog = async () => ({ canceled: false, filePath: backupPath });

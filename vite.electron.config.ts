@@ -14,7 +14,6 @@ export default defineConfig({
         http: 'electron/http.ts',
         account: 'electron/account.ts',
         backup: 'electron/backup.ts',
-        comic_cache: 'electron/comic_cache.ts',
         downloads: 'electron/downloads.ts',
         windows: 'electron/windows.ts',
       },

@@ -1,7 +1,6 @@
 import { Activity, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Box, Container } from '@mui/material';
 import { matchPath, useLocation, useOutlet } from 'react-router-dom';
-import { useSettings } from '../../app/settings_context';
 import { AppSidebar } from './app_sidebar';
 import { mainBranches, rootBranch } from './main_branches';
 
@@ -70,7 +69,6 @@ export function AppShell() {
 function BranchOutlet() {
   const location = useLocation();
   const outlet = useOutlet();
-  const { comicMode } = useSettings();
   const [saved, setSaved] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -92,7 +90,7 @@ function BranchOutlet() {
           return (
             <Activity key={path} mode={visible ? 'visible' : 'hidden'}>
               <Box sx={visible ? pageEnterSx : undefined}>
-                {render(comicMode, matchPath(pattern, paths[path])?.params.tab)}
+                {render(matchPath(pattern, paths[path])?.params.tab)}
               </Box>
             </Activity>
           );
